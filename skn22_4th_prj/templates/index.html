@@ -1,0 +1,637 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Global Drug Safety Intelligence (GDSI)</title>
+    <!-- Google Fonts 연결 -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=Noto+Sans+KR:wght@300;400;500;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <style>
+      /* [1] 코어 시스템 변수 (Design Tokens) */
+      :root {
+        --primary: #1e3a8a; /* Deep Blue */
+        --secondary: #3b82f6; /* Royal Blue */
+        --accent: #06b6d4; /* Soft Cyan */
+        --bg-grad-1: #f8fafc;
+        --bg-grad-2: #e0e7ff;
+        --text-main: #0f172a;
+        --text-muted: #64748b;
+        --white: #ffffff;
+      }
+
+      /* [2] 리셋 및 기본 베이스 */
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Outfit", "Noto Sans KR", sans-serif;
+        background: linear-gradient(
+          135deg,
+          var(--bg-grad-1) 0%,
+          var(--bg-grad-2) 100%
+        );
+        color: var(--text-main);
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        overflow-x: hidden;
+        position: relative;
+      }
+
+      /* 배경 장식 형상 (Glassmorphism 백그라운드 효과) */
+      .bg-shape {
+        position: absolute;
+        border-radius: 50%;
+        filter: blur(80px);
+        z-index: -1;
+        opacity: 0.7;
+      }
+
+      .shape-1 {
+        width: 500px;
+        height: 500px;
+        background: rgba(59, 130, 246, 0.25);
+        top: -100px;
+        right: -100px;
+      }
+
+      .shape-2 {
+        width: 400px;
+        height: 400px;
+        background: rgba(6, 182, 212, 0.2);
+        bottom: -50px;
+        left: -100px;
+        animation: floatShape 10s ease-in-out infinite alternate;
+      }
+
+      /* [3] 네비게이션 헤더 */
+      nav {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1.5rem 4rem;
+        position: relative;
+        z-index: 10;
+      }
+
+      .logo {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--primary);
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        letter-spacing: -0.5px;
+      }
+
+      .logo-icon {
+        width: 32px;
+        height: 32px;
+        background: linear-gradient(135deg, var(--secondary), var(--accent));
+        border-radius: 8px;
+        display: inline-block;
+        box-shadow: 0 4px 10px rgba(6, 182, 212, 0.3);
+      }
+
+      .nav-links {
+        display: flex;
+        gap: 1.2rem;
+        align-items: center;
+      }
+
+      .user-greeting {
+        color: var(--text-muted);
+        font-weight: 500;
+        margin-right: 1rem;
+        font-size: 0.95rem;
+      }
+
+      /* 버튼 컴포넌트 */
+      .btn {
+        text-decoration: none;
+        padding: 0.6rem 1.4rem;
+        border-radius: 20px;
+        font-weight: 600;
+        font-size: 0.95rem;
+        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .btn-primary {
+        background: linear-gradient(135deg, var(--secondary), var(--primary));
+        color: var(--white) !important;
+        box-shadow: 0 4px 15px rgba(59, 130, 246, 0.2);
+      }
+
+      .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(30, 58, 138, 0.3);
+      }
+
+      .btn-secondary {
+        background: rgba(255, 255, 255, 0.6);
+        backdrop-filter: blur(5px);
+        border: 1px solid rgba(59, 130, 246, 0.1);
+        color: var(--secondary) !important;
+        cursor: pointer;
+      }
+
+      .btn-secondary:hover {
+        background: rgba(255, 255, 255, 0.9);
+        border-color: rgba(59, 130, 246, 0.3);
+      }
+
+      .btn-danger {
+        background: linear-gradient(135deg, #f87171, #dc2626);
+        color: var(--white) !important;
+      }
+
+      .btn-danger:hover {
+        box-shadow: 0 4px 15px rgba(220, 38, 38, 0.3);
+        transform: translateY(-2px);
+      }
+
+      /* [4] 메인 히어로 섹션 */
+      .hero {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+        padding: 4rem 2rem;
+        animation: fadeIn 1s ease-out forwards;
+        z-index: 5;
+      }
+
+      .hero h1 {
+        font-size: 3.8rem;
+        font-weight: 700;
+        margin-bottom: 1.2rem;
+        line-height: 1.15;
+        background: linear-gradient(
+          135deg,
+          var(--primary) 20%,
+          var(--accent) 100%
+        );
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+        letter-spacing: -1px;
+      }
+
+      .hero p {
+        font-size: 1.25rem;
+        color: var(--text-muted);
+        margin-bottom: 3.5rem;
+        max-width: 650px;
+        line-height: 1.6;
+        font-weight: 300;
+      }
+
+      /* 👑 Glassmorphism Search Bar */
+      .search-container {
+        position: relative;
+        width: 100%;
+        max-width: 700px;
+        margin: 0 auto;
+        backdrop-filter: blur(12px) saturate(180%);
+        background: rgba(255, 255, 255, 0.75);
+        border-radius: 40px;
+        padding: 0.5rem;
+        box-shadow:
+          0 10px 40px rgba(0, 0, 0, 0.04),
+          inset 0 0 0 1px rgba(255, 255, 255, 0.5);
+        display: flex;
+        align-items: center;
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      }
+
+      .search-container:focus-within {
+        box-shadow:
+          0 20px 50px rgba(59, 130, 246, 0.15),
+          inset 0 0 0 2px rgba(59, 130, 246, 0.4);
+        transform: translateY(-2px);
+      }
+
+      .search-input {
+        flex: 1;
+        border: none;
+        background: transparent;
+        padding: 1.2rem 2rem;
+        font-size: 1.15rem;
+        color: var(--text-main);
+        outline: none;
+        font-family: inherit;
+      }
+
+      .search-input::placeholder {
+        color: #94a3b8;
+        font-weight: 300;
+      }
+
+      .search-btn {
+        background: linear-gradient(135deg, var(--secondary), var(--primary));
+        color: var(--white);
+        border: none;
+        padding: 1.2rem 2.5rem;
+        border-radius: 35px;
+        font-size: 1.15rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        white-space: nowrap;
+      }
+
+      .search-btn:hover {
+        box-shadow: 0 8px 25px rgba(30, 58, 138, 0.35);
+        transform: scale(1.02);
+        filter: brightness(1.1);
+      }
+
+      /* [5] 특장점(Features) 소개 카드 */
+      .features {
+        display: flex;
+        justify-content: center;
+        gap: 2.5rem;
+        padding: 2rem 4rem 6rem;
+        max-width: 1300px;
+        margin: 0 auto;
+        z-index: 5;
+      }
+
+      .feature-card {
+        background: rgba(255, 255, 255, 0.85);
+        backdrop-filter: blur(10px);
+        border-radius: 24px;
+        padding: 3rem 2.5rem;
+        flex: 1;
+        text-align: left;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.03);
+        border: 1px solid rgba(255, 255, 255, 1);
+        transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+        opacity: 0;
+        transform: translateY(30px);
+        animation: slideUp 0.8s ease-out forwards;
+      }
+
+      .feature-card:nth-child(1) {
+        animation-delay: 0.2s;
+      }
+      .feature-card:nth-child(2) {
+        animation-delay: 0.4s;
+      }
+      .feature-card:nth-child(3) {
+        animation-delay: 0.6s;
+      }
+
+      .feature-card:hover {
+        transform: translateY(-12px);
+        box-shadow: 0 20px 40px rgba(15, 23, 42, 0.06);
+        border-color: rgba(59, 130, 246, 0.2);
+      }
+
+      .feature-icon {
+        width: 56px;
+        height: 56px;
+        border-radius: 16px;
+        background: rgba(59, 130, 246, 0.1);
+        color: var(--secondary);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        margin-bottom: 2rem;
+        transition: transform 0.3s ease;
+      }
+
+      .feature-card:nth-child(2) .feature-icon {
+        background: rgba(6, 182, 212, 0.1);
+        color: var(--accent);
+      }
+
+      .feature-card:nth-child(3) .feature-icon {
+        background: rgba(139, 92, 246, 0.1);
+        color: #8b5cf6;
+      }
+
+      .feature-card:hover .feature-icon {
+        transform: rotate(-10deg) scale(1.1);
+      }
+
+      .feature-card h3 {
+        font-size: 1.35rem;
+        font-weight: 700;
+        margin-bottom: 1rem;
+        color: var(--text-main);
+        letter-spacing: -0.5px;
+      }
+
+      .feature-card p {
+        color: var(--text-muted);
+        line-height: 1.65;
+        font-size: 1rem;
+        font-weight: 400;
+      }
+
+      /* [6] 애니메이션 모음 */
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: scale(0.98);
+        }
+        to {
+          opacity: 1;
+          transform: scale(1);
+        }
+      }
+
+      @keyframes slideUp {
+        from {
+          opacity: 0;
+          transform: translateY(40px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @keyframes floatShape {
+        from {
+          transform: translateY(0) rotate(0deg);
+        }
+        to {
+          transform: translateY(-30px) rotate(5deg);
+        }
+      }
+
+      .animate-spin {
+        animation: spin 1s linear infinite;
+      }
+      @keyframes spin {
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
+      /* [7] 반응형 제어 */
+      @media (max-width: 1024px) {
+        .hero h1 {
+          font-size: 3rem;
+        }
+        .features {
+          padding: 2rem;
+          gap: 1.5rem;
+        }
+      }
+
+      @media (max-width: 800px) {
+        nav {
+          padding: 1.5rem 2rem;
+        }
+        .features {
+          flex-direction: column;
+          align-items: center;
+        }
+        .feature-card {
+          width: 100%;
+          max-width: 500px;
+        }
+      }
+
+      @media (max-width: 600px) {
+        nav {
+          flex-direction: column;
+          gap: 1.5rem;
+          padding: 1.5rem;
+        }
+        .hero h1 {
+          font-size: 2.2rem;
+        }
+
+        .search-container {
+          flex-direction: column;
+          border-radius: 20px;
+          background: transparent;
+          box-shadow: none;
+          border: none;
+          gap: 0.8rem;
+          padding: 0;
+        }
+        .search-input {
+          width: 100%;
+          background: rgba(255, 255, 255, 0.95);
+          border-radius: 20px;
+          box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+          padding: 1.2rem;
+        }
+        .search-btn {
+          width: 100%;
+          justify-content: center;
+          border-radius: 20px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- 배경 오브젝트 -->
+    <div class="bg-shape shape-1"></div>
+    <div class="bg-shape shape-2"></div>
+
+    <!-- 네비게이션 -->
+    <nav>
+      <a href="/" class="logo">
+        <span class="logo-icon"></span>
+        GDSI System
+      </a>
+      <div class="nav-links">
+        {% if user.is_authenticated %}
+        <span class="user-greeting">{{ user.username }}님 환영합니다</span>
+        <a href="/user/profile" class="btn btn-secondary">내 정보 관리</a>
+        <form action="/auth/logout/" method="post" style="display: inline">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-danger">로그아웃</button>
+        </form>
+        {% else %}
+        <a href="/auth/login/" class="btn btn-secondary">로그인</a>
+        <a href="/auth/register/" class="btn btn-primary">무료 회원가입</a>
+        {% endif %}
+      </div>
+    </nav>
+
+    <!-- 히어로/검색 메인 -->
+    <main class="hero">
+      <h1>지능형 의약품 안전 로드맵</h1>
+      <p>
+        환자의 증상, 질환, 알레르기 정보를 기반으로 AI가 FDA 데이터와 한국 DUR
+        안전망을 교차 분석하여 가장 신뢰할 수 있는 맞춤 안내를 제공합니다.
+      </p>
+
+      <div class="search-container">
+        <input
+          type="text"
+          id="drugInput"
+          class="search-input"
+          placeholder="약품명 또는 증상을 입력하세요 (예: 타이레놀, 감기...)"
+        />
+        <button class="search-btn" onclick="executeSearch()">
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          AI 분석 시작
+        </button>
+      </div>
+    </main>
+
+    <!-- 서비스 특장점 안내 -->
+    <section class="features">
+      <div class="feature-card">
+        <div class="feature-icon">
+          <svg
+            width="28"
+            height="28"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>
+          </svg>
+        </div>
+        <h3>개인화 증상 매칭</h3>
+        <p>
+          환자의 기저 질환, 알레르기, 복용 중인 약물을 고려하여 가장 안전한
+          의약품 성분을 AI가 1:1로 매칭해 드립니다.
+        </p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">
+          <svg
+            width="28"
+            height="28"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+          </svg>
+        </div>
+        <h3>글로벌 이중 안전망</h3>
+        <p>
+          미국 FDA의 적응증 및 경고 데이터와 한국 심사평가원의
+          DUR(의약품안심서비스) 기준을 동시에 교차 검증합니다.
+        </p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">
+          <svg
+            width="28"
+            height="28"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <circle cx="12" cy="12" r="10"></circle>
+            <polyline points="12 6 12 12 16 14"></polyline>
+          </svg>
+        </div>
+        <h3>초고속 어시스턴트</h3>
+        <p>
+          최적화된 LangGraph 파이프라인 엔진을 통해 긴 대기 시간 없이 즉각적이고
+          정확한 분석 결과를 제공받으세요.
+        </p>
+      </div>
+    </section>
+
+    <!-- 인터랙션 스크립트 -->
+    <script>
+      function executeSearch() {
+        const inputEl = document.getElementById("drugInput");
+        const name = inputEl.value.trim();
+        const btn = document.querySelector(".search-btn");
+
+        if (name) {
+          // 부드러운 로딩 상태 전환
+          inputEl.disabled = true;
+          btn.style.pointerEvents = "none";
+          btn.style.opacity = "0.9";
+          btn.innerHTML = `
+                    <svg class="animate-spin" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="12" y1="2" x2="12" y2="6"></line>
+                        <line x1="12" y1="18" x2="12" y2="22"></line>
+                        <line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line>
+                        <line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line>
+                        <line x1="2" y1="12" x2="6" y2="12"></line>
+                        <line x1="18" y1="12" x2="22" y2="12"></line>
+                        <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line>
+                        <line x1="16.24" y1="4.93" x2="19.07" y2="7.76"></line>
+                    </svg>
+                    분석 진행 중...
+                `;
+
+          // 페이지 이동 (스마트 검색 라우터 연결 보존)
+          window.location.href = `/smart-search/?q=${encodeURIComponent(name)}`;
+        } else {
+          // 애니메이션 피드백 (검색어 없을 때 흔들림 효과)
+          inputEl.style.animation = "shake 0.4s";
+          setTimeout(() => (inputEl.style.animation = ""), 400);
+        }
+      }
+
+      document
+        .getElementById("drugInput")
+        .addEventListener("keypress", function (e) {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            executeSearch();
+          }
+        });
+
+      // 흔들림 애니메이션 동적 추가
+      const shakeStyle = document.createElement("style");
+      shakeStyle.innerHTML = `
+            @keyframes shake {
+                0%, 100% { transform: translateX(0); }
+                25% { transform: translateX(-5px); }
+                50% { transform: translateX(5px); }
+                75% { transform: translateX(-5px); }
+            }
+        `;
+      document.head.appendChild(shakeStyle);
+    </script>
+  </body>
+</html>
