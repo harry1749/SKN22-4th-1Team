@@ -1,6 +1,7 @@
 import os
 import logging
 import asyncio
+from asgiref.sync import sync_to_async
 from django.shortcuts import render
 from django.http import HttpResponse, JsonResponse
 from graph_agent.builder_v2 import build_graph
@@ -10,7 +11,7 @@ from services.drug_service import DrugService
 logger = logging.getLogger(__name__)
 
 
-async def home(request):
+def home(request):
     user = (
         request.user
         if hasattr(request, "user") and request.user.is_authenticated
@@ -30,7 +31,14 @@ async def smart_search(request):
     logger.info(f"LangGraph User Query: {query}")
 
     user_profile_data = None
-    if hasattr(request, "user") and request.user.is_authenticated:
+    
+    @sync_to_async
+    def get_is_authenticated(req):
+        return hasattr(req, "user") and req.user.is_authenticated
+
+    is_auth = await get_is_authenticated(request)
+    
+    if is_auth:
         try:
             # DB 연결이 끊겼을 때 무한 대기를 방지하기 위해 짧은 타임아웃 혹은 예외 처리
             profile = await UserService.get_profile(request.user)

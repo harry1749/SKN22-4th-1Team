@@ -59,16 +59,7 @@ class MapService:
                 }.values()
                 sorted_products = sorted(
                     list(unique_products), key=lambda x: x["brand_name"]
-                )
-
-                purposes_to_translate = [p["purpose"] for p in sorted_products]
-                translated_purposes = await AIService.translate_purposes(
-                    purposes_to_translate
-                )
-
-                for i, prod in enumerate(sorted_products):
-                    if i < len(translated_purposes):
-                        prod["purpose"] = translated_purposes[i]
+                )[:5]
 
                 return {
                     "ingredient": ingredient,
@@ -130,10 +121,9 @@ class MapService:
             except Exception as e:
                 logger.error(f"Full match search error: {e}")
 
-        component_recommendations = []
-        for ingr in ingredients:
-            ingr_products = await cls.get_us_otc_products_by_ingredient(ingr)
-            component_recommendations.append(ingr_products)
+        component_recommendations = await asyncio.gather(
+            *[cls.get_us_otc_products_by_ingredient(ingr) for ingr in ingredients]
+        )
 
         return {
             "match_type": "COMPONENT_MATCH",

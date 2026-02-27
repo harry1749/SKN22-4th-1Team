@@ -2,8 +2,7 @@ from langgraph.graph import StateGraph, END
 from .state import AgentState
 from .nodes_v2 import (
     classify_node,
-    retrieve_fda_node,
-    retrieve_dur_node,
+    retrieve_data_node,
     generate_symptom_answer_node,
     generate_product_answer_node,
     generate_general_answer_node,
@@ -14,17 +13,13 @@ from .nodes_v2 import (
 def build_graph():
     """
     Build and compile the LangGraph workflow V2 for drug information
-    (Optimized with parallel logic where applicable & V2 prompt nodes)
+    (Optimized: merged FDA+DUR retrieval, parallel product fetch + AI answer)
     """
     workflow = StateGraph(AgentState)
 
     # Add Nodes
     workflow.add_node("classify", classify_node)
-
-    # [V2 최적화] FDA 조차도 비동기 내부에서 모아치기 처리가 가능하도록 변경
-    workflow.add_node("retrieve_fda", retrieve_fda_node)
-    workflow.add_node("retrieve_dur", retrieve_dur_node)
-
+    workflow.add_node("retrieve_data", retrieve_data_node)  # Merged FDA + DUR
     workflow.add_node("answer_symptom", generate_symptom_answer_node)
     workflow.add_node("answer_product", generate_product_answer_node)
     workflow.add_node("answer_general", generate_general_answer_node)
@@ -55,17 +50,14 @@ def build_graph():
         route_query,
         {
             "cached_symptom": "answer_symptom",
-            "indication": "retrieve_fda",
-            "product": "retrieve_fda",
+            "indication": "retrieve_data",
+            "product": "retrieve_data",
             "general": "answer_general",
             "error": "answer_error",
         },
     )
 
-    # Linear flow for retrievals (FDA -> DUR)
-    workflow.add_edge("retrieve_fda", "retrieve_dur")
-
-    # Route after DUR retrieval to appropriate answer generator
+    # Route after data retrieval to appropriate answer generator
     def route_answer_generation(state: AgentState):
         category = state["category"]
         if category == "symptom_recommendation":
@@ -75,7 +67,7 @@ def build_graph():
         return "answer_error"  # Should not happen
 
     workflow.add_conditional_edges(
-        "retrieve_dur",
+        "retrieve_data",
         route_answer_generation,
         {
             "answer_symptom": "answer_symptom",

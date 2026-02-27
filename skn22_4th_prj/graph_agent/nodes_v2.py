@@ -11,10 +11,12 @@ async def classify_node(state: AgentState) -> AgentState:
     """Classify user query and extract keywords"""
     query = state["query"]
 
-    cache_key = await AIService.normalize_symptom_query(query)
+    cache_key_task = AIService.normalize_symptom_query(query)
+    intent_task = AIService.classify_intent(query)
+    
+    cache_key, intent = await asyncio.gather(cache_key_task, intent_task)
 
     logger.info(f"Classifying query (cache_key: {cache_key})")
-    intent = await AIService.classify_intent(query)
 
     category = intent.get("category", "invalid")
     keyword = intent.get("keyword", "")
@@ -28,35 +30,28 @@ async def classify_node(state: AgentState) -> AgentState:
     }
 
 
-async def retrieve_fda_node(state: AgentState) -> AgentState:
-    """Retrieve FDA data based on category"""
+async def retrieve_data_node(state: AgentState) -> AgentState:
+    """Retrieve FDA + DUR data in a single step (merged for latency optimization)"""
     category = state["category"]
     keyword = state["keyword"]
     query = state["query"]
 
     fda_data = None
+    dur_data = []
 
+    # ── Step 1: FDA retrieval ──
     if category == "symptom_recommendation":
         eng_kw = [keyword] if keyword and keyword != "none" else ["pain"]
         fda_ingrs = await DrugService.get_ingrs_from_fda_by_symptoms(eng_kw)
 
         if not fda_ingrs:
             logger.info(
-                f"FDA search failed for '{keyword}'. Requesting AI symptom synonyms."
+                f"FDA search failed for '{keyword}'. Requesting AI ingredient recommendation."
             )
-            synonyms = await AIService.get_symptom_synonyms(keyword or query)
-            if synonyms:
-                logger.info(f"AI suggested synonyms: {synonyms}. Retrying FDA search.")
-                fda_ingrs = await DrugService.get_ingrs_from_fda_by_symptoms(synonyms)
-
-            if not fda_ingrs:
-                logger.info(
-                    "FDA search with synonyms failed. Requesting AI ingredient recommendation."
-                )
-                fda_ingrs = await AIService.recommend_ingredients_for_symptom(
-                    keyword or query
-                )
-                logger.info(f"AI recommended ingredients: {fda_ingrs}")
+            fda_ingrs = await AIService.recommend_ingredients_for_symptom(
+                keyword or query
+            )
+            logger.info(f"AI recommended ingredients: {fda_ingrs}")
 
         fda_data = fda_ingrs
 
@@ -64,27 +59,15 @@ async def retrieve_fda_node(state: AgentState) -> AgentState:
         target = keyword if keyword and keyword != "none" else query
         fda_data = await DrugService.search_fda(target)
 
-    return {"fda_data": fda_data}
+    # ── Step 2: DUR retrieval (depends on FDA results) ──
+    if fda_data:
+        if category == "symptom_recommendation" and isinstance(fda_data, list):
+            dur_data = await DrugService.get_enriched_dur_info(fda_data)
+        elif category == "product_request" and isinstance(fda_data, dict):
+            ingrs = fda_data.get("active_ingredients", "")
+            dur_data = await DrugService.get_dur_by_ingr(ingrs)
 
-
-async def retrieve_dur_node(state: AgentState) -> AgentState:
-    """Retrieve DUR data based on FDA ingredients"""
-    category = state["category"]
-    fda_data = state["fda_data"]
-
-    if not fda_data:
-        return {"dur_data": []}
-
-    dur_data = []
-
-    if category == "symptom_recommendation" and isinstance(fda_data, list):
-        dur_data = await DrugService.get_enriched_dur_info(fda_data)
-
-    elif category == "product_request" and isinstance(fda_data, dict):
-        ingrs = fda_data.get("active_ingredients", "")
-        dur_data = await DrugService.get_dur_by_ingr(ingrs)
-
-    return {"dur_data": dur_data}
+    return {"fda_data": fda_data, "dur_data": dur_data}
 
 
 async def generate_symptom_answer_node(state: AgentState) -> AgentState:
@@ -112,10 +95,29 @@ async def generate_symptom_answer_node(state: AgentState) -> AgentState:
         prefix = "해당 증상에 대한 FDA/DUR 기반의 정확한 의약품 정보는 찾을 수 없었지만, 일반적인 정보를 안내해 드립니다.\n\n"
         return {"final_answer": prefix + answer, "ingredients_data": []}
 
-    # AI에게 성분별 안전 여부 판단 요청
-    ai_result = await AIService.generate_symptom_answer(
+    # ── 병렬 실행: AI 안전성 판단 + 모든 성분 제품 조회 ──
+    # 모든 성분명 추출 (AI 판단 전에 제품 조회 미리 시작)
+    all_ingredient_names = [item["ingredient"].upper() for item in dur_data]
+
+    async def fetch_products(ingr_name: str):
+        from services.map_service import MapService
+        try:
+            result = await MapService.get_us_otc_products_by_ingredient(ingr_name)
+            return ingr_name, result.get("products", [])
+        except Exception as e:
+            logger.warning(f"Failed to fetch products for '{ingr_name}': {e}")
+            return ingr_name, []
+
+    # AI 판단과 제품 조회를 동시에 실행
+    ai_task = AIService.generate_symptom_answer(
         symptom, dur_data, state.get("user_profile")
     )
+    product_tasks = [fetch_products(n) for n in all_ingredient_names]
+
+    results = await asyncio.gather(ai_task, *product_tasks)
+    ai_result = results[0]
+    product_results = results[1:]
+    products_map = dict(product_results)
 
     if not isinstance(ai_result, dict):
         # 예외적 폴백
@@ -135,25 +137,7 @@ async def generate_symptom_answer_node(state: AgentState) -> AgentState:
     # DUR 상세 데이터를 성분명 기준으로 인덱싱
     dur_map = {item["ingredient"].upper(): item for item in dur_data}
 
-    # 안전 성분의 제품명을 병렬로 조회
-    safe_names = [
-        ing["name"].upper() for ing in ai_ingredients if ing.get("can_take", False)
-    ]
-
-    async def fetch_products(ingr_name: str):
-        from services.map_service import MapService
-
-        try:
-            result = await MapService.get_us_otc_products_by_ingredient(ingr_name)
-            return ingr_name, result.get("products", [])
-        except Exception as e:
-            logger.warning(f"Failed to fetch products for '{ingr_name}': {e}")
-            return ingr_name, []
-
-    product_results = await asyncio.gather(*[fetch_products(n) for n in safe_names])
-    products_map = dict(product_results)
-
-    # 최종 ingredients_data 조립
+    # 최종 ingredients_data 조립 (safe 성분만 products 포함)
     ingredients_data = []
     for ing in ai_ingredients:
         name = ing.get("name", "").upper()

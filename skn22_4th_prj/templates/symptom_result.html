@@ -65,7 +65,7 @@
     <!-- 성분별 카드 목록 -->
     {% if ingredients_data %}
     <div class="space-y-5 mb-6">
-      {% for ing in ingredients_data %}
+      {% for ing in ingredients_data|slice:":5" %}
       <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
         <!-- 카드 헤더 -->
         <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100">
@@ -91,20 +91,18 @@
 
         <!-- 판단 이유 -->
         <div class="px-6 py-3 bg-gray-50 text-sm text-gray-600 border-b border-gray-100">
-          <i class="fas fa-info-circle text-blue-400 mr-1"></i> {{ ing.reason
-          }}
+          <i class="fas fa-info-circle text-blue-400 mr-1"></i> {{ ing.reason }}
         </div>
 
         <!-- 제품 목록 (복용 가능한 경우) -->
         {% if ing.can_take and ing.products %}
-        <div class="px-6 pt-4 pb-2">
+        <div class="px-6 pt-4 pb-4">
           <p class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">
             <i class="fas fa-pills mr-1 text-indigo-400"></i>
             미국 OTC 추천 제품
           </p>
-          <!-- 상위 2개 항상 표시 -->
           <ul class="space-y-2">
-            {% for prod in ing.products|slice:":2" %}
+            {% for prod in ing.products|slice:":5" %}
             <li class="flex items-start justify-between bg-indigo-50 rounded-lg px-4 py-3">
               <div>
                 <span class="font-bold text-indigo-900 text-sm">{{ prod.brand_name }}</span>
@@ -118,117 +116,91 @@
             </li>
             {% endfor %}
           </ul>
-        </div> <!-- 나머지 제품 아코디언 -->
-        {% if ing.products|length > 2 %} {% with accordion_id="acc-"|add:ing.name %}
-        <button onclick="toggleAccordion('{{ accordion_id }}')"
-          class="mt-2 w-full text-center text-blue-600 hover:text-blue-800 text-sm font-semibold py-2 flex items-center justify-center gap-1 transition-colors">
-          나머지 {{ ing.products|length|add:"-2" }}개 제품 더 보기
-          <i class="fas fa-chevron-down text-xs" id="{{ accordion_id }}-icon"></i>
-        </button>
-        <div id="{{ accordion_id }}" class="accordion-content">
-          <ul class="space-y-2 pb-3 pt-1">
-            {% for prod in ing.products|slice:"2:" %}
-            <li class="flex items-start justify-between bg-gray-50 rounded-lg px-4 py-2.5 border border-gray-100">
-              <div>
-                <span class="font-semibold text-gray-700 text-sm">{{ prod.brand_name }}</span>
-                {% if prod.active_ingredient and prod.active_ingredient != 'Unknown' %}
-                <span class="text-gray-400 text-xs ml-2">({{ prod.active_ingredient }})</span>
-                {% endif %}
-                <p class="text-gray-500 text-xs mt-0.5 truncate max-w-xs" title="{{ prod.purpose }}">
-                  {{ prod.purpose }}
-                </p>
-              </div>
-            </li>
-            {% endfor %}
-          </ul>
         </div>
-        {% endwith %}
+        {% elif ing.can_take %}
+        <div class="px-6 py-4 text-sm text-gray-400">
+          <i class="fas fa-box-open mr-1"></i> 검색된 OTC 제품이 없습니다.
+        </div>
         {% endif %}
-      </div>
-      {% elif ing.can_take %}
-      <div class="px-6 py-4 text-sm text-gray-400">
-        <i class="fas fa-box-open mr-1"></i> 검색된 OTC 제품이 없습니다.
-      </div>
-      {% endif %}
 
-      <!-- DUR 상세 (주의 필요 성분 또는 경고가 있는 경우) -->
-      {% if ing.kr_durs or ing.fda_warning %} {% with dur_id="dur-"|add:ing.name %}
-      <div class="border-t border-gray-100">
-        <button onclick="toggleAccordion('{{ dur_id }}')"
-          class="w-full px-6 py-3 text-sm text-gray-500 hover:text-gray-700 flex items-center justify-between font-medium transition-colors">
-          <span><i class="fas fa-shield-alt mr-1 text-red-400"></i> KR·US 안전
-            정보 상세</span>
-          <i class="fas fa-chevron-down text-xs" id="{{ dur_id }}-icon"></i>
-        </button>
-        <div id="{{ dur_id }}" class="accordion-content">
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 px-6 pb-5">
-            <!-- 한국 DUR -->
-            <div class="bg-white rounded-lg border border-gray-100 p-4 shadow-sm">
-              <h4 class="font-bold text-red-600 mb-2 flex items-center text-sm">
-                <img src="https://upload.wikimedia.org/wikipedia/commons/0/09/Flag_of_South_Korea.svg"
-                  class="w-5 h-3 mr-2 border" />
-                한국 DUR (식약처)
-              </h4>
-              {% if ing.kr_durs %}
-              <ul class="space-y-2">
-                {% for dur in ing.kr_durs %}
-                <li class="text-xs">
-                  <span class="inline-block bg-red-100 text-red-700 px-2 py-0.5 rounded font-bold mb-1">{{ dur.type
-                    }}</span>
-                  <p class="text-gray-600">{{ dur.warning }}</p>
-                </li>
-                {% endfor %}
-              </ul>
-              {% else %}
-              <p class="text-gray-400 text-xs">
-                등록된 주의사항이 없습니다.
-              </p>
-              {% endif %}
-            </div>
-            <!-- 미국 FDA -->
-            <div class="bg-white rounded-lg border border-gray-100 p-4 shadow-sm">
-              <h4 class="font-bold text-blue-600 mb-2 flex items-center text-sm">
-                <img src="https://upload.wikimedia.org/wikipedia/en/a/a4/Flag_of_the_United_States.svg"
-                  class="w-5 h-3 mr-2 border" />
-                미국 FDA (Warnings)
-              </h4>
-              {% if ing.fda_warning %}
-              <p class="text-xs text-gray-600 leading-relaxed">
-                {{ ing.fda_warning }}
-              </p>
-              {% else %}
-              <p class="text-gray-400 text-xs">FDA 경고 문구가 없습니다.</p>
-              {% endif %}
+        <!-- DUR 상세 (주의 필요 성분 또는 경고가 있는 경우) -->
+        {% if ing.kr_durs or ing.fda_warning %} {% with dur_id="dur-"|add:ing.name %}
+        <div class="border-t border-gray-100">
+          <button onclick="toggleAccordion('{{ dur_id }}')"
+            class="w-full px-6 py-3 text-sm text-gray-500 hover:text-gray-700 flex items-center justify-between font-medium transition-colors">
+            <span><i class="fas fa-shield-alt mr-1 text-red-400"></i> KR·US 안전
+              정보 상세</span>
+            <i class="fas fa-chevron-down text-xs" id="{{ dur_id }}-icon"></i>
+          </button>
+          <div id="{{ dur_id }}" class="accordion-content">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 px-6 pb-5">
+              <!-- 한국 DUR -->
+              <div class="bg-white rounded-lg border border-gray-100 p-4 shadow-sm">
+                <h4 class="font-bold text-red-600 mb-2 flex items-center text-sm">
+                  <img src="https://upload.wikimedia.org/wikipedia/commons/0/09/Flag_of_South_Korea.svg"
+                    class="w-5 h-3 mr-2 border" />
+                  한국 DUR (식약처)
+                </h4>
+                {% if ing.kr_durs %}
+                <ul class="space-y-2">
+                  {% for dur in ing.kr_durs %}
+                  <li class="text-xs">
+                    <span class="inline-block bg-red-100 text-red-700 px-2 py-0.5 rounded font-bold mb-1">{{ dur.type
+                      }}</span>
+                    <p class="text-gray-600">{{ dur.warning }}</p>
+                  </li>
+                  {% endfor %}
+                </ul>
+                {% else %}
+                <p class="text-gray-400 text-xs">
+                  등록된 주의사항이 없습니다.
+                </p>
+                {% endif %}
+              </div>
+              <!-- 미국 FDA -->
+              <div class="bg-white rounded-lg border border-gray-100 p-4 shadow-sm">
+                <h4 class="font-bold text-blue-600 mb-2 flex items-center text-sm">
+                  <img src="https://upload.wikimedia.org/wikipedia/en/a/a4/Flag_of_the_United_States.svg"
+                    class="w-5 h-3 mr-2 border" />
+                  미국 FDA (Warnings)
+                </h4>
+                {% if ing.fda_warning %}
+                <p class="text-xs text-gray-600 leading-relaxed">
+                  {{ ing.fda_warning }}
+                </p>
+                {% else %}
+                <p class="text-gray-400 text-xs">FDA 경고 문구가 없습니다.</p>
+                {% endif %}
+              </div>
             </div>
           </div>
         </div>
+        {% endwith %} {% endif %}
       </div>
-      {% endwith %} {% endif %}
+      {% endfor %}
     </div>
-    {% endfor %}
-  </div>
 
-  <!-- 데이터 없을 때 폴백 -->
-  {% elif answer %}
-  <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 mb-6">
-    <div class="bg-blue-50 rounded-xl p-5 text-gray-700 leading-relaxed text-base" style="white-space: pre-wrap">
-      {{ answer }}
+    <!-- 데이터 없을 때 폴백 -->
+    {% elif answer %}
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 mb-6">
+      <div class="bg-blue-50 rounded-xl p-5 text-gray-700 leading-relaxed text-base" style="white-space: pre-wrap">
+        {{ answer }}
+      </div>
     </div>
-  </div>
-  {% endif %}
+    {% endif %}
 
-  <!-- 면책 공고 -->
-  <div class="bg-orange-50 rounded-xl p-5 border border-orange-100 flex items-start mb-6">
-    <i class="fas fa-exclamation-triangle text-orange-400 mt-1 mr-3"></i>
-    <div class="text-xs text-orange-800 leading-5">
-      <p class="font-bold mb-1 underline">주의사항 및 면책 공고</p>
-      본 정보는 한국 식약처 DUR 데이터 및 FDA 정보를 바탕으로 AI가 생성한
-      참고용 가이드입니다. 개별 환자의 상태에 따라 적합한 약물이 달라질 수
-      있으므로,
-      <strong>반드시 복용 전 미국 현지 약사 또는 의사에게 성분명을 제시하고
-        상담받으시기 바랍니다.</strong>
+    <!-- 면책 공고 -->
+    <div class="bg-orange-50 rounded-xl p-5 border border-orange-100 flex items-start mb-6">
+      <i class="fas fa-exclamation-triangle text-orange-400 mt-1 mr-3"></i>
+      <div class="text-xs text-orange-800 leading-5">
+        <p class="font-bold mb-1 underline">주의사항 및 면책 공고</p>
+        본 정보는 한국 식약처 DUR 데이터 및 FDA 정보를 바탕으로 AI가 생성한
+        참고용 가이드입니다. 개별 환자의 상태에 따라 적합한 약물이 달라질 수
+        있으므로,
+        <strong>반드시 복용 전 미국 현지 약사 또는 의사에게 성분명을 제시하고
+          상담받으시기 바랍니다.</strong>
+      </div>
     </div>
-  </div>
   </div>
 
   <script>

@@ -8,6 +8,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # .env is in the workspace root (one level up from BASE_DIR)
 load_dotenv(BASE_DIR.parent / ".env")
 
+# LangSmith / LangChain Telemetry mapping
+if os.getenv("LANGSMITH_API_KEY") and not os.getenv("LANGCHAIN_API_KEY"):
+    os.environ["LANGCHAIN_API_KEY"] = os.getenv("LANGSMITH_API_KEY")
+    os.environ["LANGCHAIN_TRACING_V2"] = "true"
+    os.environ["LANGCHAIN_PROJECT"] = os.getenv("LANGCHAIN_PROJECT", "skn22-4th-django")
+
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "django-insecure-fallback-key-replace-me")
 

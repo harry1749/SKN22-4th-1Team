@@ -76,7 +76,7 @@ class DrugService:
     @classmethod
     async def get_ingrs_from_fda_by_symptoms(cls, keywords: list):
         """영어 증상 키워드로 FDA 관련 성분명 추출"""
-        all_ingrs = set()
+        ingredient_counts = {}
 
         async with httpx.AsyncClient(timeout=10.0) as client:
             tasks = []
@@ -95,8 +95,9 @@ class DrugService:
                 if isinstance(res, httpx.Response) and res.status_code == 200:
                     try:
                         results = res.json().get("results", [])
-                        for item in results[:20]:
+                        for item in results[:10]:
                             term = item.get("term", "").upper()
+                            count = item.get("count", 0)
                             if not term:
                                 continue
                             parts = re.split(r",\s*| AND ", term)
@@ -104,12 +105,14 @@ class DrugService:
                                 part = part.strip()
                                 part_clean = re.sub(r"\s+\d+.*$", "", part).strip()
                                 if part_clean and len(part_clean) > 2:
-                                    all_ingrs.add(part_clean)
+                                    ingredient_counts[part_clean] = ingredient_counts.get(part_clean, 0) + count
                     except Exception as e:
                         logger.warning(f"[FDA count parse error]: {e}")
                         continue
 
-        return list(all_ingrs)
+        sorted_ingrs = sorted(ingredient_counts.items(), key=lambda x: x[1], reverse=True)
+        top_ingrs = [ingr for ingr, _ in sorted_ingrs[:5]]
+        return top_ingrs
 
     @staticmethod
     @sync_to_async
@@ -157,25 +160,22 @@ class DrugService:
     @classmethod
     async def get_enriched_dur_info(cls, ingr_list: list):
         """영어 성분명 리스트를 받아 KR DUR 및 FDA Warning 정보를 병합"""
-        enriched_data = []
         unique_ingrs = sorted(list(set([i.upper() for i in ingr_list])))
 
-        for ingr in unique_ingrs:
-            durs = await cls._get_kr_durs_async(ingr)
-            fda_warn = await cls.get_fda_warnings_by_ingr(ingr)
-
-            if fda_warn:
-                from services.ai_service_v2 import AIService
-
-                summary = await AIService.summarize_fda_warning(fda_warn)
-                if summary:
-                    fda_warn = summary
-
-            enriched_data.append(
-                {"ingredient": ingr, "kr_durs": durs, "fda_warning": fda_warn}
+        async def fetch_info(ingr):
+            durs, fda_warn = await asyncio.gather(
+                cls._get_kr_durs_async(ingr),
+                cls.get_fda_warnings_by_ingr(ingr)
             )
 
-        return enriched_data
+            return {
+                "ingredient": ingr,
+                "kr_durs": durs,
+                "fda_warning": fda_warn,
+            }
+
+        enriched_data = await asyncio.gather(*[fetch_info(ingr) for ingr in unique_ingrs])
+        return list(enriched_data)
 
     @classmethod
     def compare_dosage_and_warn(
