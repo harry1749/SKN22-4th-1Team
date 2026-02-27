@@ -27,6 +27,31 @@ class SupabaseService:
         return cls._client
 
     @classmethod
+    async def auth_sign_up(cls, username, password):
+        """Supabase Auth를 이용한 회원가입"""
+        client = cls.get_client()
+        # 이메일 형식이 필요하므로 가상 도메인 추가
+        email = f"{username}@internal.com"
+        try:
+            response = client.auth.sign_up({"email": email, "password": password})
+            return response.user
+        except Exception as e:
+            logger.error(f"[Supabase Auth] Sign up error: {e}")
+            return None
+
+    @classmethod
+    async def auth_sign_in(cls, username, password):
+        """Supabase Auth를 이용한 로그인"""
+        client = cls.get_client()
+        email = f"{username}@internal.com"
+        try:
+            response = client.auth.sign_in_with_password({"email": email, "password": password})
+            return response.user, response.session
+        except Exception as e:
+            logger.error(f"[Supabase Auth] Sign in error: {e}")
+            return None, None
+
+    @classmethod
     async def get_dur_by_ingr(cls, ingr_text: str):
         if not ingr_text:
             return []
@@ -223,3 +248,66 @@ class SupabaseService:
         except Exception as e:
             logger.error(f"[Cache] Error saving cache for '{query_text}': {e}")
             return False
+
+    @classmethod
+    async def search_drugs(cls, query_text: str, limit: int = 20):
+        """Supabase의 unified_drug_info 테이블에서 약품 검색"""
+        client = cls.get_client()
+        if not client:
+            return []
+        try:
+            # item_name 또는 entp_name에 검색어 포함 여부 확인 (ilike 사용)
+            response = (
+                client.table("unified_drug_info")
+                .select("item_name, entp_name")
+                .or_(f"item_name.ilike.%{query_text}%,entp_name.ilike.%{query_text}%")
+                .limit(limit)
+                .execute()
+            )
+            return response.data
+        except Exception as e:
+            logger.error(f"[Supabase] Drug search error: {e}")
+            return []
+
+    @classmethod
+    async def get_user_profile(cls, user_id: str):
+        """Supabase의 user_profile 테이블에서 사용자 프로필 조회 (UUID 지원)"""
+        client = cls.get_client()
+        if not client:
+            return None
+        try:
+            response = (
+                client.table("user_profile")
+                .select("*")
+                .eq("user_id", user_id)
+                .limit(1)
+                .execute()
+            )
+            if response.data:
+                return response.data[0]
+        except Exception as e:
+            logger.error(f"[Supabase] Profile fetch error for user {user_id}: {e}")
+        return None
+
+    @classmethod
+    async def update_user_profile(cls, user_id: str, medications: str, allergies: str, diseases: str):
+        """Supabase의 user_profile 테이블에 사용자 프로필 저장/업데이트 (UUID 지원)"""
+        client = cls.get_client()
+        if not client:
+            return None
+        try:
+            payload = {
+                "user_id": user_id,
+                "current_medications": medications,
+                "allergies": allergies,
+                "chronic_diseases": diseases,
+            }
+            response = (
+                client.table("user_profile")
+                .upsert(payload, on_conflict="user_id")
+                .execute()
+            )
+            return response.data[0] if response.data else None
+        except Exception as e:
+            logger.error(f"[Supabase] Profile update error for user {user_id}: {e}")
+            return None
