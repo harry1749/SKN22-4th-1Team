@@ -1,0 +1,348 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>회원가입 - Global Drug Safety Intelligence</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=Noto+Sans+KR:wght@300;400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      :root {
+        --primary: #1e3a8a;
+        --secondary: #3b82f6;
+        --accent: #06b6d4;
+        --bg-grad-1: #f8fafc;
+        --bg-grad-2: #e0e7ff;
+      }
+
+      body {
+        font-family: "Outfit", "Noto Sans KR", sans-serif;
+        background: linear-gradient(
+          135deg,
+          var(--bg-grad-1) 0%,
+          var(--bg-grad-2) 100%
+        );
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem;
+      }
+
+      .glass-card {
+        backdrop-filter: blur(16px) saturate(180%);
+        background: rgba(255, 255, 255, 0.7);
+        border-radius: 24px;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.05);
+      }
+
+      .input-field {
+        background: rgba(255, 255, 255, 0.5);
+        border: 1px solid rgba(59, 130, 246, 0.1);
+        transition: all 0.3s ease;
+      }
+
+      .input-field:focus {
+        background: white;
+        border-color: var(--secondary);
+        box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+        outline: none;
+      }
+
+      .btn-grad {
+        background: linear-gradient(135deg, var(--secondary), var(--primary));
+        transition: all 0.3s ease;
+      }
+
+      .btn-grad:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(30, 58, 138, 0.25);
+      }
+
+      .hidden-input {
+        display: none;
+        animation: slideDown 0.3s ease-out;
+      }
+
+      @keyframes slideDown {
+        from {
+          opacity: 0;
+          transform: translateY(-10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="glass-card w-full max-w-xl p-8 md:p-12">
+      <div class="text-center mb-10">
+        <div
+          class="inline-block w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl mb-4 shadow-lg shadow-cyan-500/30"
+        ></div>
+        <h1 class="text-3xl font-bold text-slate-800 tracking-tight">
+          회원가입
+        </h1>
+        <p class="text-slate-500 mt-2 font-light">
+          당신을 위한 맞춤형 안전 가이드를 시작하세요
+        </p>
+      </div>
+
+      {% if error %}
+      <div
+        class="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 mb-8 rounded shadow-sm"
+      >
+        <p class="text-sm font-medium">{{ error }}</p>
+      </div>
+      {% endif %}
+
+      <form
+        action="/auth/register/"
+        method="post"
+        id="registerForm"
+        class="space-y-6"
+      >
+        {% csrf_token %}
+
+        <div class="space-y-6">
+          <!-- 이메일 -->
+          <div>
+            <label
+              class="block text-slate-700 text-sm font-semibold mb-2"
+              for="email"
+              >이메일</label
+            >
+            <input
+              type="email"
+              name="email"
+              id="email"
+              class="input-field w-full px-4 py-3 rounded-xl text-slate-700"
+              placeholder="example@email.com"
+              required
+            />
+            <p
+              id="email_error"
+              class="text-red-500 text-xs mt-1 ml-1"
+              style="display: none"
+            ></p>
+          </div>
+          <!-- 비밀번호 -->
+          <div>
+            <label
+              class="block text-slate-700 text-sm font-semibold mb-2"
+              for="password"
+              >비밀번호</label
+            >
+            <input
+              type="password"
+              name="password"
+              id="password"
+              class="input-field w-full px-4 py-3 rounded-xl text-slate-700"
+              placeholder="6자 이상 권장"
+              required
+            />
+          </div>
+          <!-- 비밀번호 확인 -->
+          <div>
+            <label
+              class="block text-slate-700 text-sm font-semibold mb-2"
+              for="password_confirm"
+              >비밀번호 확인</label
+            >
+            <input
+              type="password"
+              name="password_confirm"
+              id="password_confirm"
+              class="input-field w-full px-4 py-3 rounded-xl text-slate-700"
+              placeholder="다시 한번 입력해주세요"
+              required
+            />
+            <p
+              id="pw_error"
+              class="text-red-500 text-xs mt-1 ml-1"
+              style="display: none"
+            >
+              비밀번호가 서로 일치하지 않습니다.
+            </p>
+          </div>
+        </div>
+
+        <!-- 복용 중인 약 -->
+        <div>
+          <label
+            class="block text-slate-700 text-sm font-semibold mb-2"
+            for="medications"
+            >현재 복용 중인 약</label
+          >
+          <textarea
+            name="current_medications"
+            id="medications"
+            rows="2"
+            class="input-field w-full px-4 py-3 rounded-xl text-slate-700"
+            placeholder="예: 타이레놀, 아스피린..."
+          ></textarea>
+        </div>
+
+        <!-- 임신 여부 -->
+        <div
+          class="flex items-center gap-3 p-4 bg-white/50 rounded-xl border border-slate-100"
+        >
+          <input
+            type="checkbox"
+            name="is_pregnant"
+            id="is_pregnant"
+            class="w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+          />
+          <label for="is_pregnant" class="text-slate-700 font-medium"
+            >현재 임신 중이거나 수유 중이십니까?</label
+          >
+        </div>
+
+        <!-- 기저질환 -->
+        <div class="space-y-4">
+          <div
+            class="flex items-center gap-3 p-4 bg-white/50 rounded-xl border border-slate-100"
+          >
+            <input
+              type="checkbox"
+              name="has_disease"
+              id="has_disease"
+              onchange="toggleInput('has_disease', 'disease_box')"
+              class="w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+            />
+            <label for="has_disease" class="text-slate-700 font-medium"
+              >기저질환이 있으십니까?</label
+            >
+          </div>
+          <div id="disease_box" class="hidden-input">
+            <textarea
+              name="chronic_diseases"
+              class="input-field w-full px-4 py-3 rounded-xl text-slate-700"
+              placeholder="질환명을 입력해주세요 (예: 당뇨, 고혈압...)"
+            ></textarea>
+          </div>
+        </div>
+
+        <!-- 알레르기 -->
+        <div class="space-y-4">
+          <div
+            class="flex items-center gap-3 p-4 bg-white/50 rounded-xl border border-slate-100"
+          >
+            <input
+              type="checkbox"
+              name="has_allergy"
+              id="has_allergy"
+              onchange="toggleInput('has_allergy', 'allergy_box')"
+              class="w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+            />
+            <label for="has_allergy" class="text-slate-700 font-medium"
+              >약물 또는 음식 알레르기가 있으십니까?</label
+            >
+          </div>
+          <div id="allergy_box" class="hidden-input">
+            <textarea
+              name="allergies"
+              class="input-field w-full px-4 py-3 rounded-xl text-slate-700"
+              placeholder="알레르기 원인을 입력해주세요 (예: 항생제, 땅콩...)"
+            ></textarea>
+          </div>
+        </div>
+
+        <button
+          type="submit"
+          class="btn-grad w-full py-4 rounded-2xl text-white font-bold text-lg shadow-lg hover:brightness-110 active:scale-[0.98]"
+        >
+          회원가입 완료
+        </button>
+      </form>
+
+      <div class="mt-8 text-center text-slate-500 text-sm">
+        이미 계정이 있으신가요?
+        <a
+          href="/auth/login/"
+          class="text-blue-600 font-semibold hover:underline"
+          >로그인 하기</a
+        >
+      </div>
+    </div>
+
+    <script>
+      function toggleInput(checkboxId, targetId) {
+        const checkbox = document.getElementById(checkboxId);
+        const target = document.getElementById(targetId);
+        if (checkbox.checked) {
+          target.style.display = "block";
+        } else {
+          target.style.display = "none";
+        }
+      }
+
+      document.getElementById("registerForm").onsubmit = function (e) {
+        e.preventDefault(); // 가장 먼저 기본 동작 차단
+
+        const pw = document.getElementById("password").value;
+        const pwConfirm = document.getElementById("password_confirm").value;
+        const pwErrorText = document.getElementById("pw_error");
+        const emailErrorText = document.getElementById("email_error");
+
+        // 초기화
+        pwErrorText.style.display = "none";
+        emailErrorText.style.display = "none";
+
+        if (pw !== pwConfirm) {
+          pwErrorText.style.display = "block";
+          document.getElementById("password_confirm").focus();
+          return false;
+        }
+
+        const formData = new FormData(this);
+        const csrfToken = document.querySelector(
+          "[name=csrfmiddlewaretoken]",
+        ).value;
+
+        fetch(this.action, {
+          method: "POST",
+          body: formData,
+          headers: {
+            "X-Requested-With": "XMLHttpRequest",
+            "X-CSRFToken": csrfToken,
+          },
+        })
+          .then((response) =>
+            response
+              .json()
+              .then((data) => ({ status: response.status, body: data })),
+          )
+          .then((result) => {
+            const data = result.body;
+            if (result.status === 200 && data.status === "success") {
+              window.location.href = data.redirect;
+            } else {
+              if (data.code === "user_exists") {
+                emailErrorText.textContent = data.message;
+                emailErrorText.style.display = "block";
+                document.getElementById("email").focus();
+              } else {
+                alert(data.message || "회원가입 중 오류가 발생했습니다.");
+              }
+            }
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+            alert("서버 통신 오류가 발생했습니다.");
+          });
+
+        return false;
+      };
+    </script>
+  </body>
+</html>
