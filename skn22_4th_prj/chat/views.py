@@ -12,16 +12,13 @@ logger = logging.getLogger(__name__)
 
 
 def home(request):
-    user = (
-        request.user
-        if hasattr(request, "user") and request.user.is_authenticated
-        else None
-    )
+    """홈 화면 - 세션에서 Supabase 유저 정보 확인"""
+    user = request.session.get("supabase_user")
     return render(request, "index.html", {"user": user})
 
 
 async def smart_search(request):
-    """지능형 RAG 검색 (LangGraph 기반) - Django 버전"""
+    """지능형 RAG 검색 (LangGraph 기반) - Supabase 세션 버전"""
     query = request.GET.get("q") or request.POST.get("q")
     if not query:
         return HttpResponse(
@@ -31,17 +28,11 @@ async def smart_search(request):
     logger.info(f"LangGraph User Query: {query}")
 
     user_profile_data = None
+    user_info = request.session.get("supabase_user")
     
-    @sync_to_async
-    def get_is_authenticated(req):
-        return hasattr(req, "user") and req.user.is_authenticated
-
-    is_auth = await get_is_authenticated(request)
-    
-    if is_auth:
+    if user_info:
         try:
-            # DB 연결이 끊겼을 때 무한 대기를 방지하기 위해 짧은 타임아웃 혹은 예외 처리
-            profile = await UserService.get_profile(request.user)
+            profile = await UserService.get_profile(user_info)
             if profile:
                 user_profile_data = {
                     "current_medications": profile.current_medications,
@@ -49,8 +40,7 @@ async def smart_search(request):
                     "chronic_diseases": profile.chronic_diseases,
                 }
         except Exception as e:
-            logger.error(f"Error fetching user profile (DB might be down): {e}")
-            # 프로필을 못 가져와도 검색은 계속 진행
+            logger.error(f"Error fetching user profile from Supabase: {e}")
 
     inputs = {"query": query, "user_profile": user_profile_data}
     try:

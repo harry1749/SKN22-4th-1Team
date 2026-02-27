@@ -12,16 +12,16 @@ logger = logging.getLogger(__name__)
 
 
 class DrugSearchView(APIView):
-    def get(self, request):
+    async def get(self, request):
         query = request.query_params.get("q", "").strip()
         if not query:
             return Response([])
 
-        results = UnifiedDrugInfo.objects.filter(
-            Q(item_name__icontains=query) | Q(entp_name__icontains=query)
-        ).values("item_name", "entp_name")[:20]
+        from services.supabase_service import SupabaseService
+        # Supabase API를 통한 약품 검색
+        results = await SupabaseService.search_drugs(query)
 
-        return Response(list(results))
+        return Response(results)
 
 
 class UsRoadmapView(APIView):

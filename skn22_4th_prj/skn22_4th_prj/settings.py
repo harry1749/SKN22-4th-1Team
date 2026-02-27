@@ -68,19 +68,17 @@ TEMPLATES = [
 WSGI_APPLICATION = "skn22_4th_prj.wsgi.application"
 
 # Database
+# 장고 DB 대신 Supabase를 사용하므로, 내부 관리를 위해 최소한의 SQLite만 설정합니다.
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.mysql",
-        "NAME": os.getenv("DB_NAME", "drug_db"),
-        "USER": os.getenv("DB_USER", "drug"),
-        "PASSWORD": os.getenv("DB_PASSWORD", "drug"),
-        "HOST": os.getenv("DB_HOST", "127.0.0.1"),
-        "PORT": os.getenv("DB_PORT", "3306"),
-        "OPTIONS": {
-            "init_command": "SET sql_mode='STRICT_TRANS_TABLES'",
-        },
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": BASE_DIR / "db.sqlite3",
     }
 }
+
+# 세션 관리 (데이터베이스를 사용하지 않고 쿠키에 직접 암호화하여 저장)
+SESSION_ENGINE = "django.contrib.sessions.backends.signed_cookies"
+SESSION_COOKIE_HTTPONLY = True
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
