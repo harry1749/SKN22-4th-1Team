@@ -3,298 +3,304 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>회원가입 - Global Drug Safety Intelligence</title>
-    <!-- Google Fonts -->
+    <title>회원가입 - GDSI</title>
+
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=Noto+Sans+KR:wght@300;400;500;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Noto+Sans+KR:wght@400;500;700&display=swap"
       rel="stylesheet"
     />
-    <script src="https://cdn.tailwindcss.com"></script>
+
     <style>
       :root {
-        --primary: #1e3a8a;
-        --secondary: #3b82f6;
-        --accent: #06b6d4;
-        --bg-grad-1: #f8fafc;
-        --bg-grad-2: #e0e7ff;
+        --ink-900: #07211d;
+        --ink-700: #2b4a44;
+        --line: #d2e7df;
+        --brand-700: #006d5b;
+        --brand-600: #00806a;
+        --card: #ffffff;
+      }
+
+      * {
+        box-sizing: border-box;
       }
 
       body {
-        font-family: "Outfit", "Noto Sans KR", sans-serif;
-        background: linear-gradient(
-          135deg,
-          var(--bg-grad-1) 0%,
-          var(--bg-grad-2) 100%
-        );
+        margin: 0;
         min-height: 100vh;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 2rem;
+        font-family: "Sora", "Noto Sans KR", sans-serif;
+        color: var(--ink-900);
+        background:
+          radial-gradient(900px 400px at 110% -10%, #d9fff3 0%, transparent 60%),
+          radial-gradient(820px 340px at -10% 110%, #ffe8cf 0%, transparent 60%),
+          #f4faf7;
+        padding: 1rem;
       }
 
-      .glass-card {
-        backdrop-filter: blur(16px) saturate(180%);
-        background: rgba(255, 255, 255, 0.7);
+      .wrap {
+        width: min(760px, 100%);
+        margin: 1.2rem auto;
+      }
+
+      .card {
+        background: var(--card);
+        border: 1px solid var(--line);
         border-radius: 24px;
-        border: 1px solid rgba(255, 255, 255, 0.3);
-        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.05);
+        box-shadow: 0 20px 45px rgba(4, 37, 32, 0.1);
+        padding: 1.5rem;
       }
 
-      .input-field {
-        background: rgba(255, 255, 255, 0.5);
-        border: 1px solid rgba(59, 130, 246, 0.1);
-        transition: all 0.3s ease;
+      .head {
+        margin-bottom: 1.1rem;
       }
 
-      .input-field:focus {
-        background: white;
-        border-color: var(--secondary);
-        box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+      .head h1 {
+        margin: 0;
+        font-size: 1.5rem;
+        letter-spacing: -0.02em;
+      }
+
+      .head p {
+        margin: 0.45rem 0 0;
+        color: var(--ink-700);
+        font-size: 0.9rem;
+      }
+
+      .error {
+        background: #fff1ef;
+        color: #b5402a;
+        border: 1px solid #ffd1c9;
+        border-radius: 12px;
+        padding: 0.75rem;
+        margin-bottom: 1rem;
+        font-size: 0.88rem;
+      }
+
+      .grid {
+        display: grid;
+        gap: 0.85rem;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .full {
+        grid-column: 1 / -1;
+      }
+
+      .field label {
+        display: block;
+        font-size: 0.82rem;
+        font-weight: 700;
+        margin-bottom: 0.42rem;
+      }
+
+      input,
+      textarea {
+        width: 100%;
+        border: 1px solid #c9ddd5;
+        border-radius: 12px;
+        padding: 0.82rem 0.9rem;
+        font: inherit;
         outline: none;
+        background: #ffffff;
       }
 
-      .btn-grad {
-        background: linear-gradient(135deg, var(--secondary), var(--primary));
-        transition: all 0.3s ease;
+      input:focus,
+      textarea:focus {
+        border-color: #5ecfb5;
+        box-shadow: 0 0 0 4px rgba(0, 128, 106, 0.13);
       }
 
-      .btn-grad:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 20px rgba(30, 58, 138, 0.25);
+      textarea {
+        resize: vertical;
+        min-height: 96px;
+      }
+
+      .check {
+        border: 1px solid #d8e8e2;
+        border-radius: 12px;
+        background: #f8fdfa;
+        padding: 0.8rem;
+      }
+
+      .check label {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.9rem;
+        margin: 0;
+      }
+
+      .check input[type="checkbox"] {
+        width: 18px;
+        height: 18px;
       }
 
       .hidden-input {
         display: none;
-        animation: slideDown 0.3s ease-out;
+        margin-top: 0.55rem;
       }
 
-      @keyframes slideDown {
-        from {
-          opacity: 0;
-          transform: translateY(-10px);
-        }
-        to {
-          opacity: 1;
-          transform: translateY(0);
+      .error-text {
+        display: none;
+        margin-top: 0.35rem;
+        color: #b5402a;
+        font-size: 0.8rem;
+      }
+
+      .actions {
+        display: grid;
+        gap: 0.65rem;
+        margin-top: 1rem;
+      }
+
+      .btn {
+        border: 0;
+        border-radius: 12px;
+        padding: 0.9rem;
+        font: inherit;
+        font-weight: 700;
+        cursor: pointer;
+        text-decoration: none;
+        text-align: center;
+      }
+
+      .btn-primary {
+        color: #ffffff;
+        background: linear-gradient(135deg, var(--brand-700), var(--brand-600));
+      }
+
+      .btn-secondary {
+        color: #1f5f53;
+        background: #f2fbf7;
+        border: 1px solid #bae4d7;
+      }
+
+      @media (max-width: 760px) {
+        .grid {
+          grid-template-columns: 1fr;
         }
       }
     </style>
   </head>
+
   <body>
-    <div class="glass-card w-full max-w-xl p-8 md:p-12">
-      <div class="text-center mb-10">
-        <div
-          class="inline-block w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl mb-4 shadow-lg shadow-cyan-500/30"
-        ></div>
-        <h1 class="text-3xl font-bold text-slate-800 tracking-tight">
-          회원가입
-        </h1>
-        <p class="text-slate-500 mt-2 font-light">
-          당신을 위한 맞춤형 안전 가이드를 시작하세요
-        </p>
-      </div>
+    <div class="wrap">
+      <main class="card">
+        <header class="head">
+          <h1>회원가입</h1>
+          <p>개인 상태를 함께 등록하면 더 정확한 약물 안전성 결과를 받을 수 있습니다.</p>
+        </header>
 
-      {% if error %}
-      <div
-        class="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 mb-8 rounded shadow-sm"
-      >
-        <p class="text-sm font-medium">{{ error }}</p>
-      </div>
-      {% endif %}
+        {% if error %}
+        <div class="error">{{ error }}</div>
+        {% endif %}
 
-      <form
-        action="/auth/register/"
-        method="post"
-        id="registerForm"
-        class="space-y-6"
-      >
-        {% csrf_token %}
+        <form action="/auth/register/" method="post" id="registerForm">
+          {% csrf_token %}
 
-        <div class="space-y-6">
-          <!-- 이메일 -->
-          <div>
-            <label
-              class="block text-slate-700 text-sm font-semibold mb-2"
-              for="email"
-              >이메일</label
-            >
-            <input
-              type="email"
-              name="email"
-              id="email"
-              class="input-field w-full px-4 py-3 rounded-xl text-slate-700"
-              placeholder="example@email.com"
-              required
-            />
-            <p
-              id="email_error"
-              class="text-red-500 text-xs mt-1 ml-1"
-              style="display: none"
-            ></p>
+          <div class="grid">
+            <div class="field">
+              <label for="email">이메일</label>
+              <input type="email" name="email" id="email" placeholder="example@email.com" required />
+              <p id="email_error" class="error-text"></p>
+            </div>
+
+            <div class="field">
+              <label for="password">비밀번호</label>
+              <input type="password" name="password" id="password" placeholder="6자 이상 권장" required />
+            </div>
+
+            <div class="field">
+              <label for="password_confirm">비밀번호 확인</label>
+              <input
+                type="password"
+                name="password_confirm"
+                id="password_confirm"
+                placeholder="비밀번호를 다시 입력"
+                required
+              />
+              <p id="pw_error" class="error-text">비밀번호가 서로 일치하지 않습니다.</p>
+            </div>
+
+            <div class="field full">
+              <label for="medications">현재 복용 중인 약</label>
+              <textarea
+                name="current_medications"
+                id="medications"
+                rows="2"
+                placeholder="예: 타이레놀, 아스피린"
+              ></textarea>
+            </div>
+
+            <div class="check full">
+              <label for="is_pregnant">
+                <input type="checkbox" name="is_pregnant" id="is_pregnant" />
+                현재 임신 또는 수유 중입니다.
+              </label>
+            </div>
+
+            <div class="check full">
+              <label for="has_disease">
+                <input
+                  type="checkbox"
+                  name="has_disease"
+                  id="has_disease"
+                  onchange="toggleInput('has_disease', 'disease_box')"
+                />
+                기저질환이 있습니다.
+              </label>
+              <div id="disease_box" class="hidden-input">
+                <textarea
+                  name="chronic_diseases"
+                  placeholder="질환명을 입력하세요 (예: 고혈압, 당뇨)"
+                ></textarea>
+              </div>
+            </div>
+
+            <div class="check full">
+              <label for="has_allergy">
+                <input
+                  type="checkbox"
+                  name="has_allergy"
+                  id="has_allergy"
+                  onchange="toggleInput('has_allergy', 'allergy_box')"
+                />
+                약물 또는 음식 알레르기가 있습니다.
+              </label>
+              <div id="allergy_box" class="hidden-input">
+                <textarea
+                  name="allergies"
+                  placeholder="알레르기 항목을 입력하세요 (예: 페니실린, 땅콩)"
+                ></textarea>
+              </div>
+            </div>
           </div>
-          <!-- 비밀번호 -->
-          <div>
-            <label
-              class="block text-slate-700 text-sm font-semibold mb-2"
-              for="password"
-              >비밀번호</label
-            >
-            <input
-              type="password"
-              name="password"
-              id="password"
-              class="input-field w-full px-4 py-3 rounded-xl text-slate-700"
-              placeholder="6자 이상 권장"
-              required
-            />
-          </div>
-          <!-- 비밀번호 확인 -->
-          <div>
-            <label
-              class="block text-slate-700 text-sm font-semibold mb-2"
-              for="password_confirm"
-              >비밀번호 확인</label
-            >
-            <input
-              type="password"
-              name="password_confirm"
-              id="password_confirm"
-              class="input-field w-full px-4 py-3 rounded-xl text-slate-700"
-              placeholder="다시 한번 입력해주세요"
-              required
-            />
-            <p
-              id="pw_error"
-              class="text-red-500 text-xs mt-1 ml-1"
-              style="display: none"
-            >
-              비밀번호가 서로 일치하지 않습니다.
-            </p>
-          </div>
-        </div>
 
-        <!-- 복용 중인 약 -->
-        <div>
-          <label
-            class="block text-slate-700 text-sm font-semibold mb-2"
-            for="medications"
-            >현재 복용 중인 약</label
-          >
-          <textarea
-            name="current_medications"
-            id="medications"
-            rows="2"
-            class="input-field w-full px-4 py-3 rounded-xl text-slate-700"
-            placeholder="예: 타이레놀, 아스피린..."
-          ></textarea>
-        </div>
-
-        <!-- 임신 여부 -->
-        <div
-          class="flex items-center gap-3 p-4 bg-white/50 rounded-xl border border-slate-100"
-        >
-          <input
-            type="checkbox"
-            name="is_pregnant"
-            id="is_pregnant"
-            class="w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-          />
-          <label for="is_pregnant" class="text-slate-700 font-medium"
-            >현재 임신 중이거나 수유 중이십니까?</label
-          >
-        </div>
-
-        <!-- 기저질환 -->
-        <div class="space-y-4">
-          <div
-            class="flex items-center gap-3 p-4 bg-white/50 rounded-xl border border-slate-100"
-          >
-            <input
-              type="checkbox"
-              name="has_disease"
-              id="has_disease"
-              onchange="toggleInput('has_disease', 'disease_box')"
-              class="w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-            />
-            <label for="has_disease" class="text-slate-700 font-medium"
-              >기저질환이 있으십니까?</label
-            >
+          <div class="actions">
+            <button type="submit" class="btn btn-primary">회원가입 완료</button>
+            <a href="/auth/login/" class="btn btn-secondary">이미 계정이 있나요? 로그인</a>
+            <a href="/" class="btn btn-secondary">메인으로 돌아가기</a>
           </div>
-          <div id="disease_box" class="hidden-input">
-            <textarea
-              name="chronic_diseases"
-              class="input-field w-full px-4 py-3 rounded-xl text-slate-700"
-              placeholder="질환명을 입력해주세요 (예: 당뇨, 고혈압...)"
-            ></textarea>
-          </div>
-        </div>
-
-        <!-- 알레르기 -->
-        <div class="space-y-4">
-          <div
-            class="flex items-center gap-3 p-4 bg-white/50 rounded-xl border border-slate-100"
-          >
-            <input
-              type="checkbox"
-              name="has_allergy"
-              id="has_allergy"
-              onchange="toggleInput('has_allergy', 'allergy_box')"
-              class="w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-            />
-            <label for="has_allergy" class="text-slate-700 font-medium"
-              >약물 또는 음식 알레르기가 있으십니까?</label
-            >
-          </div>
-          <div id="allergy_box" class="hidden-input">
-            <textarea
-              name="allergies"
-              class="input-field w-full px-4 py-3 rounded-xl text-slate-700"
-              placeholder="알레르기 원인을 입력해주세요 (예: 항생제, 땅콩...)"
-            ></textarea>
-          </div>
-        </div>
-
-        <button
-          type="submit"
-          class="btn-grad w-full py-4 rounded-2xl text-white font-bold text-lg shadow-lg hover:brightness-110 active:scale-[0.98]"
-        >
-          회원가입 완료
-        </button>
-      </form>
-
-      <div class="mt-8 text-center text-slate-500 text-sm">
-        이미 계정이 있으신가요?
-        <a
-          href="/auth/login/"
-          class="text-blue-600 font-semibold hover:underline"
-          >로그인 하기</a
-        >
-      </div>
+        </form>
+      </main>
     </div>
 
     <script>
       function toggleInput(checkboxId, targetId) {
         const checkbox = document.getElementById(checkboxId);
         const target = document.getElementById(targetId);
-        if (checkbox.checked) {
-          target.style.display = "block";
-        } else {
-          target.style.display = "none";
-        }
+        target.style.display = checkbox.checked ? "block" : "none";
       }
 
       document.getElementById("registerForm").onsubmit = function (e) {
-        e.preventDefault(); // 가장 먼저 기본 동작 차단
+        e.preventDefault();
 
         const pw = document.getElementById("password").value;
         const pwConfirm = document.getElementById("password_confirm").value;
         const pwErrorText = document.getElementById("pw_error");
         const emailErrorText = document.getElementById("email_error");
 
-        // 초기화
         pwErrorText.style.display = "none";
         emailErrorText.style.display = "none";
 
@@ -305,9 +311,7 @@
         }
 
         const formData = new FormData(this);
-        const csrfToken = document.querySelector(
-          "[name=csrfmiddlewaretoken]",
-        ).value;
+        const csrfToken = document.querySelector("[name=csrfmiddlewaretoken]").value;
 
         fetch(this.action, {
           method: "POST",
@@ -317,11 +321,7 @@
             "X-CSRFToken": csrfToken,
           },
         })
-          .then((response) =>
-            response
-              .json()
-              .then((data) => ({ status: response.status, body: data })),
-          )
+          .then((response) => response.json().then((data) => ({ status: response.status, body: data })))
           .then((result) => {
             const data = result.body;
             if (result.status === 200 && data.status === "success") {

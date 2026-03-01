@@ -3,250 +3,506 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>{{ drug_name }} - 글로벌 약물 안전 검색</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>{{ drug_name }} - 약물 분석 결과</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
+      href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Noto+Sans+KR:wght@400;500;700&display=swap"
       rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
     />
+
+    <style>
+      :root {
+        --ink-900: #07211d;
+        --ink-700: #2b4a44;
+        --line: #d2e7df;
+        --danger-700: #b43232;
+        --danger-100: #fff1f1;
+      }
+
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+
+      body {
+        min-height: 100vh;
+        font-family: "Sora", "Noto Sans KR", sans-serif;
+        color: var(--ink-900);
+        background:
+          radial-gradient(900px 420px at 105% -10%, #d9fff3 0%, transparent 60%),
+          radial-gradient(850px 360px at -10% 110%, #ffe8cf 0%, transparent 60%),
+          #f4faf7;
+      }
+
+      .wrap { width: min(1120px, calc(100% - 2rem)); margin: 1rem auto 2rem; }
+      .top { margin-bottom: 0.9rem; }
+      .back { text-decoration: none; color: #1f5f53; font-weight: 700; font-size: 0.9rem; }
+
+      .hero, .panel {
+        background: #fff;
+        border: 1px solid var(--line);
+        border-radius: 20px;
+        box-shadow: 0 16px 36px rgba(4, 37, 32, 0.08);
+      }
+
+      .hero { padding: 1.4rem; margin-bottom: 1rem; }
+      .hero h1 { font-size: clamp(1.4rem, 3vw, 2rem); letter-spacing: -0.02em; }
+      .hero p { margin-top: 0.45rem; color: var(--ink-700); font-size: 0.93rem; }
+
+      .grid { display: grid; gap: 1rem; grid-template-columns: 1fr 1fr; }
+      .panel { padding: 1.2rem; }
+      .title { font-size: 1.02rem; font-weight: 800; margin-bottom: 0.75rem; }
+      .sub { font-size: 0.83rem; color: var(--ink-700); margin-top: 0.6rem; }
+
+      .block {
+        border: 1px solid #e4efe9;
+        border-radius: 12px;
+        padding: 0.75rem;
+        margin-top: 0.6rem;
+        background: #f8fdfa;
+      }
+
+      .block h3 {
+        font-size: 0.82rem;
+        text-transform: uppercase;
+        color: #1f5f53;
+        letter-spacing: 0.04em;
+      }
+
+      .block p {
+        margin-top: 0.35rem;
+        font-size: 0.88rem;
+        line-height: 1.55;
+        color: #334e47;
+        white-space: pre-wrap;
+      }
+
+      .dur-global-alert {
+        margin-bottom: 1rem;
+        border: 2px solid #ff9f9f;
+        background: linear-gradient(135deg, #fff1f1, #ffe6e6);
+        border-radius: 16px;
+        padding: 0.9rem 1rem;
+      }
+
+      .dur-global-alert strong { color: #9f2121; font-size: 1rem; }
+      .dur-global-alert p { margin-top: 0.35rem; color: #7f2b2b; font-size: 0.86rem; }
+
+      .warn-summary {
+        margin-bottom: 0.75rem;
+        padding: 0.7rem;
+        border-radius: 10px;
+        background: var(--danger-100);
+        color: var(--danger-700);
+        font-size: 0.88rem;
+        font-weight: 700;
+      }
+
+      .dur-panel { border-color: #ffb7b7; }
+      .dur-panel .title { color: #9f2121; }
+
+      .dur-summary-box {
+        margin-bottom: 0.75rem;
+        border: 1px solid #ffcaca;
+        background: #fff7f7;
+        border-radius: 12px;
+        padding: 0.7rem;
+      }
+
+      .dur-summary-box h3 { font-size: 0.86rem; color: #8f2323; margin-bottom: 0.35rem; }
+      .dur-summary-box ul { list-style: none; display: grid; gap: 0.32rem; }
+      .dur-summary-box li { font-size: 0.8rem; line-height: 1.4; color: #6f2d2d; }
+      .dur-summary-meta { margin-top: 0.35rem; font-size: 0.8rem; color: #7f2b2b; }
+
+      .dur-item {
+        border: 1px solid #ffd5d5;
+        background: #fff9f9;
+        border-radius: 12px;
+        padding: 0.75rem;
+        margin-bottom: 0.6rem;
+      }
+
+      .chip {
+        display: inline-block;
+        padding: 0.2rem 0.5rem;
+        border-radius: 999px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        background: #ffe7e7;
+        color: #b43232;
+        margin-bottom: 0.35rem;
+      }
+
+      .roadmap { margin-top: 1rem; }
+      .roadmap-loading { color: var(--ink-700); font-size: 0.9rem; }
+
+      .dynamic-card {
+        border: 1px solid #dbece6;
+        border-radius: 12px;
+        padding: 0.8rem;
+        margin-bottom: 0.7rem;
+        background: #f8fdfa;
+      }
+
+      .dynamic-card h4 { margin-bottom: 0.35rem; }
+      .dynamic-card p, .dynamic-card li { color: #345049; font-size: 0.86rem; line-height: 1.5; }
+
+      .toggle-btn {
+        margin-top: 0.5rem;
+        border: 1px solid #bde3d7;
+        background: #fff;
+        color: #1f5f53;
+        padding: 0.45rem 0.7rem;
+        border-radius: 10px;
+        font: inherit;
+        font-size: 0.8rem;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      .product-list { margin-top: 0.55rem; display: none; }
+      .product-list.open { display: block; }
+      .product-list ul { list-style: none; }
+      .product-list li { padding: 0.55rem 0; border-bottom: 1px solid #e5f1ec; }
+      .product-list li:last-child { border-bottom: 0; }
+
+      body.dur-gate-locked { overflow: hidden; }
+
+      .dur-gate-backdrop {
+        position: fixed;
+        inset: 0;
+        z-index: 1200;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 1rem;
+        background: rgba(4, 26, 22, 0.7);
+        backdrop-filter: blur(2px);
+      }
+
+      .dur-gate-modal {
+        width: min(760px, 100%);
+        max-height: calc(100vh - 2rem);
+        overflow: auto;
+        border-radius: 16px;
+        border: 2px solid #ffb9b9;
+        background: #fff;
+        box-shadow: 0 18px 42px rgba(3, 28, 24, 0.35);
+        padding: 1rem;
+      }
+
+      .dur-gate-title { color: #9f2121; font-size: 1rem; font-weight: 800; }
+      .dur-gate-desc { margin-top: 0.35rem; color: #6f2d2d; font-size: 0.86rem; line-height: 1.45; }
+
+      .dur-gate-list {
+        margin-top: 0.75rem;
+        max-height: 38vh;
+        overflow: auto;
+        border: 1px solid #ffd6d6;
+        border-radius: 12px;
+        background: #fff7f7;
+        padding: 0.7rem;
+        display: grid;
+        gap: 0.5rem;
+      }
+
+      .dur-gate-item {
+        border: 1px solid #ffe0e0;
+        border-radius: 10px;
+        background: #fff;
+        padding: 0.55rem;
+      }
+
+      .dur-gate-item p { margin-top: 0.28rem; color: #6f2d2d; font-size: 0.82rem; line-height: 1.45; }
+
+      .dur-gate-ack {
+        margin-top: 0.7rem;
+        display: flex;
+        align-items: center;
+        gap: 0.45rem;
+        font-size: 0.84rem;
+        color: #4f2a2a;
+        font-weight: 600;
+      }
+
+      .dur-gate-btn {
+        margin-top: 0.7rem;
+        width: 100%;
+        border: 0;
+        border-radius: 10px;
+        padding: 0.7rem 0.9rem;
+        font: inherit;
+        font-size: 0.9rem;
+        font-weight: 800;
+        cursor: pointer;
+        color: #fff;
+        background: #b43232;
+      }
+
+      .dur-gate-btn:disabled { cursor: not-allowed; background: #d8a4a4; }
+
+      @media (max-width: 900px) {
+        .wrap { width: min(1120px, calc(100% - 1rem)); }
+        .grid { grid-template-columns: 1fr; }
+      }
+    </style>
   </head>
 
-  <body class="bg-gray-50 text-gray-900">
-    <div class="max-w-4xl mx-auto p-5">
-      <header class="mb-10 text-center">
-        <h1 class="text-3xl font-extrabold text-blue-600 mb-2">
-          {{ drug_name }}
-        </h1>
-        <p class="text-gray-500">Active Ingredients: {{ ingredients }}</p>
-        <div class="mt-4">
-          <a href="/" class="text-blue-500 hover:underline"
-            >← 홈으로 돌아가기</a
-          >
-        </div>
-      </header>
+  <body>
+    <main class="wrap">
+      <div class="top">
+        <a href="/" class="back">&larr; 메인으로 돌아가기</a>
+      </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-        <section
-          class="bg-white p-6 rounded-xl shadow-md border-t-4 border-blue-500"
-        >
-          <h2 class="text-xl font-bold mb-4 flex items-center">
-            🇺🇸 US FDA Guideline
-          </h2>
-          <div class="space-y-4 text-sm leading-relaxed">
-            <div>
-              <h3 class="font-bold text-blue-700">[Purpose]</h3>
-              <p>{{ us_guideline.indications }}</p>
-            </div>
-            <div>
-              <h3 class="font-bold text-blue-700">[Warnings]</h3>
-              <p class="text-xs">{{ us_guideline.warnings }}</p>
-            </div>
-            <div>
-              <h3 class="font-bold text-blue-700">[Dosage]</h3>
-              <p>{{ us_guideline.dosage }}</p>
-            </div>
-          </div>
-        </section>
+      <section class="hero">
+        <h1>{{ drug_name }}</h1>
+        <p>주요 성분: {{ ingredients }}</p>
+      </section>
 
-        <section
-          class="bg-white p-6 rounded-xl shadow-md border-t-4 border-red-500"
-        >
-          <h2 class="text-xl font-bold mb-4 flex items-center">
-            🇰🇷 한국 식약처 DUR 안전 기준
-          </h2>
-          {% if dur_count > 0 %}
-          <div
-            class="mb-4 p-3 bg-red-50 text-red-700 rounded-lg text-sm font-bold"
-          >
-            총 {{ dur_count }}건의 주의사항이 발견되었습니다.
+      {% if dur_count > 0 %}
+      <section class="dur-global-alert">
+        <strong>주의: DUR 경고 {{ dur_count }}건 확인</strong>
+        <p>복용 전 아래 DUR 안내를 먼저 확인해 주세요.</p>
+      </section>
+      {% endif %}
+
+      <section class="grid">
+        <article class="panel">
+          <h2 class="title">미국 FDA 가이드</h2>
+          <div class="block"><h3>적응증</h3><p>{{ us_guideline.indications|default:"정보 없음" }}</p></div>
+          <div class="block"><h3>경고</h3><p>{{ us_guideline.warnings|default:"정보 없음" }}</p></div>
+          <div class="block"><h3>용법·용량</h3><p>{{ us_guideline.dosage|default:"정보 없음" }}</p></div>
+        </article>
+
+        <article class="panel {% if dur_count > 0 %}dur-panel{% endif %}">
+          <h2 class="title">국내 DUR 안내</h2>
+          {% if dur_summary.lines %}
+          <div class="dur-summary-box">
+            <h3>중요 항목 요약</h3>
+            {% if dur_summary.type_summary %}<p class="dur-summary-meta">유형: {{ dur_summary.type_summary }}</p>{% endif %}
+            <ul>{% for line in dur_summary.lines %}<li>{{ line }}</li>{% endfor %}</ul>
+            {% if dur_summary.has_more %}<p class="dur-summary-meta">추가 항목은 상세 목록에서 확인하세요.</p>{% endif %}
           </div>
-          <div class="space-y-4">
-            {% for dur in kr_dur %}
-            <div class="p-4 bg-gray-50 rounded-lg border-l-4 border-red-400">
-              <span
-                class="text-xs font-bold px-2 py-1 bg-red-100 text-red-600 rounded mb-2 inline-block"
-              >
-                {{ dur.type }}
-              </span>
-              <p class="text-sm font-semibold mb-1 text-gray-800">
-                성분:
-                <span class="text-red-600">{{ dur.ingr_name }}</span>
-              </p>
-              <p class="text-xs text-gray-600 leading-normal">
-                {{ dur.warning_msg }}
-              </p>
-            </div>
-            {% endfor %}
-          </div>
-          {% else %}
-          <p class="text-gray-500 text-center py-10">
-            한국 DUR 기준 금기 사항이 없습니다.
-          </p>
           {% endif %}
-        </section>
-      </div>
 
-      <!-- US OTC Roadmap 영역 -->
-      <div
-        class="mt-8 bg-white p-6 rounded-xl shadow-md border-t-4 border-indigo-500"
-      >
-        <h2 class="text-xl font-bold mb-4 flex items-center text-indigo-600">
-          <i class="fas fa-pills mr-2 text-indigo-500"></i> US OTC Roadmap &
-          Pharmacist Card
-        </h2>
-        <div id="roadmap-container" class="space-y-4">
-          <div class="flex items-center justify-center p-10 text-gray-500">
-            <i class="fas fa-spinner fa-spin mr-2 mb-1"></i> 매핑 데이터를
-            불러오는 중입니다...
+          {% if dur_count > 0 %}
+          <div class="warn-summary">총 {{ dur_count }}건의 주의 항목이 확인되었습니다.</div>
+          {% for dur in kr_dur %}
+          <div class="dur-item">
+            <span class="chip">{{ dur.type }}</span>
+            <p><strong>성분:</strong> {{ dur.ingr_name }}</p>
+            <p class="sub">{{ dur.warning_msg }}</p>
           </div>
+          {% endfor %}
+          {% else %}
+          <p class="sub">현재 확인된 DUR 주의 항목이 없습니다.</p>
+          {% endif %}
+        </article>
+      </section>
+
+      <section class="panel roadmap">
+        <h2 class="title">US OTC 대체약 로드맵</h2>
+        <div id="roadmap-container"><p class="roadmap-loading">데이터를 불러오는 중입니다...</p></div>
+      </section>
+    </main>
+
+    {% if dur_count > 0 %}
+    <section id="durGate" class="dur-gate-backdrop" aria-modal="true" role="dialog">
+      <div class="dur-gate-modal">
+        <h2 class="dur-gate-title">DUR 확인이 필요합니다</h2>
+        <p class="dur-gate-desc">아래 DUR 안내를 끝까지 확인한 뒤 체크해야 계속 진행할 수 있습니다.</p>
+        <div id="durGateList" class="dur-gate-list">
+          {% for dur in kr_dur %}
+          <article class="dur-gate-item">
+            <strong>{{ dur.type }} | {{ dur.ingr_name }}</strong>
+            <p>{{ dur.warning_msg }}</p>
+          </article>
+          {% endfor %}
         </div>
+        <label class="dur-gate-ack"><input id="durGateCheck" type="checkbox" /> DUR 안내를 확인했습니다.</label>
+        <button id="durGateConfirm" class="dur-gate-btn" type="button" disabled>확인하고 결과 보기</button>
       </div>
-    </div>
+    </section>
+    {% endif %}
 
-    <!-- US Roadmap 로딩 로직 -->
     <script>
-      document.addEventListener("DOMContentLoaded", () => {
-        const ingredientsStr = "{{ ingredients }}";
-        const ingredients = ingredientsStr
-          .split(",")
-          .map((s) => s.trim())
-          .filter((s) => s);
+      function escapeHtml(value) {
+        return String(value || "")
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#39;");
+      }
 
-        if (ingredients.length === 0) {
-          document.getElementById("roadmap-container").innerHTML =
-            "<p class='text-red-500'>성분 정보가 부족하여 대체 제품을 찾을 수 없습니다.</p>";
-          return;
+      function setRoadmapError(message) {
+        const container = document.getElementById("roadmap-container");
+        container.innerHTML = `<p class="sub" style="color:#b43232;">${escapeHtml(message)}</p>`;
+      }
+
+      function createToggleableProductList(title, products) {
+        const safeTitle = escapeHtml(title || "대체 제품");
+        const count = Array.isArray(products) ? products.length : 0;
+        const id = `products-${Math.random().toString(36).slice(2, 10)}`;
+
+        if (!count) {
+          return `<div class="dynamic-card"><h4>${safeTitle}</h4><p>검색된 제품이 없습니다.</p></div>`;
         }
 
-        const queryParams = ingredients
-          .map((i) => `ingredients=${encodeURIComponent(i)}`)
-          .join("&");
-
-        // Note the trailing slash for Django compatibility
-        fetch(`/api/drugs/us-roadmap/?${queryParams}`)
-          .then((res) => res.json())
-          .then((data) => {
-            renderRoadmap(data);
+        const items = products
+          .map((p) => {
+            const name = escapeHtml(p.brand_name || "이름 없음");
+            const ingredient = escapeHtml(p.active_ingredient || "");
+            const purpose = escapeHtml(p.purpose || "설명 없음");
+            const ingredientText = ingredient && ingredient !== "Unknown" ? ` (${ingredient})` : "";
+            return `<li><strong>${name}${ingredientText}</strong><br /><span>${purpose}</span></li>`;
           })
-          .catch((err) => {
-            document.getElementById("roadmap-container").innerHTML =
-              `<p class='text-red-500'>오류 발생: ${err.message}</p>`;
-          });
-      });
+          .join("");
+
+        return `
+          <div class="dynamic-card">
+            <h4>${safeTitle} (${count})</h4>
+            <button type="button" class="toggle-btn" onclick="toggleProducts('${id}')">제품 목록 펼치기/접기</button>
+            <div id="${id}" class="product-list"><ul>${items}</ul></div>
+          </div>
+        `;
+      }
 
       function renderRoadmap(data) {
         const container = document.getElementById("roadmap-container");
         container.innerHTML = "";
 
-        if (data.pharmacist_card) {
-          const card = data.pharmacist_card;
-          let html = `
-                    <div class="mb-6 p-5 bg-indigo-50 border border-indigo-200 rounded-lg">
-                        <h3 class="font-bold text-lg text-indigo-800 mb-2">${card.title}</h3>
-                        <p class="text-sm text-indigo-700 mb-4">미국 약국을 방문하실 때 이 카드를 약사에게 보여주세요.</p>
-                        <div class="bg-white p-4 rounded border border-indigo-100 shadow-sm text-gray-800 font-medium italic">
-                            ${card.english_guide.join("<br>")}
-                        </div>
-                    </div>
-                `;
-          container.innerHTML += html;
+        if (!data || data.error) {
+          setRoadmapError(data && data.error ? data.error : "로드맵 정보를 불러오지 못했습니다.");
+          return;
         }
 
-        if (data.dosage_warnings && data.dosage_warnings.length > 0) {
-          let html = `<div class="mb-6 space-y-2">`;
-          data.dosage_warnings.forEach((w) => {
-            html += `
-                        <div class="p-3 bg-red-50 text-red-700 border border-red-200 rounded-lg text-sm">
-                            <span class="font-bold"><i class="fas fa-exclamation-triangle"></i> 주의 [${w.brand_name}]:</span> ${w.warning_info.warning}
-                        </div>
-                    `;
-          });
-          html += `</div>`;
-          container.innerHTML += html;
+        const card = data.pharmacist_card || null;
+        if (card && (card.title || (card.english_guide && card.english_guide.length))) {
+          const lines = Array.isArray(card.english_guide)
+            ? card.english_guide.map((line) => escapeHtml(line)).join("<br />")
+            : "";
+          container.innerHTML += `
+            <div class="dynamic-card">
+              <h4>${escapeHtml(card.title || "Pharmacist Card")}</h4>
+              <p>약국에서 보여줄 수 있는 영문 가이드입니다.</p>
+              <p>${lines || "가이드 문구 없음"}</p>
+            </div>
+          `;
         }
 
-        if (data.mapping_result) {
-          const resultsHtml = document.createElement("div");
-          const matchTypeStr =
-            data.mapping_result.match_type === "FULL_MATCH"
-              ? "완전 일치 복합제"
-              : "개별 성분 맞춤제";
+        if (Array.isArray(data.dosage_warnings) && data.dosage_warnings.length > 0) {
+          const warningList = data.dosage_warnings
+            .map((w) => {
+              const brand = escapeHtml(w.brand_name || "제품명 없음");
+              const warning = escapeHtml((w.warning_info && w.warning_info.warning) || "주의 정보 없음");
+              return `<li><strong>${brand}</strong>: ${warning}</li>`;
+            })
+            .join("");
 
-          let html = `
-                    <h3 class="font-bold text-gray-800 text-lg mb-2">대체 추천 약품 정보 <span class="text-sm font-normal text-indigo-600 bg-indigo-100 px-2 py-1 rounded-full">${matchTypeStr}</span></h3>
-                    <p class="text-sm text-gray-600 mb-4">${data.mapping_result.description}</p>
-                `;
+          container.innerHTML += `
+            <div class="dynamic-card" style="border-color:#ffd5d5;background:#fff9f9;">
+              <h4 style="color:#b43232;">용량 관련 주의</h4>
+              <ul style="list-style:none;">${warningList}</ul>
+            </div>
+          `;
+        }
 
-          if (data.mapping_result.match_type === "FULL_MATCH") {
-            html += createToggleableProductList(
-              "모든 허가 성분 포함 대체제",
-              data.mapping_result.recommendations,
-            );
-          } else if (data.mapping_result.match_type === "COMPONENT_MATCH") {
-            data.mapping_result.recommendations.forEach((rec) => {
-              html += createToggleableProductList(
-                `성분: ${rec.ingredient}`,
-                rec.products,
-              );
-            });
+        const mapping = data.mapping_result || null;
+        if (!mapping) {
+          if (!container.innerHTML) {
+            container.innerHTML = `<p class="sub">대체약 매핑 결과가 없습니다.</p>`;
           }
+          return;
+        }
 
-          resultsHtml.innerHTML = html;
-          container.appendChild(resultsHtml);
+        const matchType = mapping.match_type === "FULL_MATCH" ? "완전 일치" : "성분 부분 일치";
+        container.innerHTML += `
+          <div class="dynamic-card">
+            <h4>대체약 매핑 결과 (${matchType})</h4>
+            <p>${escapeHtml(mapping.description || "설명 없음")}</p>
+          </div>
+        `;
+
+        if (mapping.match_type === "FULL_MATCH") {
+          container.innerHTML += createToggleableProductList("전체 성분 대체 후보", mapping.recommendations || []);
+        } else if (mapping.match_type === "COMPONENT_MATCH" && Array.isArray(mapping.recommendations)) {
+          if (
+            Array.isArray(mapping.cross_ingredient_recommendations) &&
+            mapping.cross_ingredient_recommendations.length > 0
+          ) {
+            container.innerHTML += createToggleableProductList(
+              "다성분 포함 대체 후보",
+              mapping.cross_ingredient_recommendations
+            );
+          }
+          mapping.recommendations.forEach((rec) => {
+            container.innerHTML += createToggleableProductList(`성분: ${rec.ingredient || "미상"}`, rec.products || []);
+          });
         }
       }
 
-      function createToggleableProductList(ingredientTitle, products) {
-        if (!products || products.length === 0) {
-          return `<div class="mb-4 p-3 bg-gray-100 rounded text-sm text-gray-600"><strong>${ingredientTitle}</strong>: 검색된 결과가 없습니다.</div>`;
+      function fetchRoadmap() {
+        const ingredientsStr = "{{ ingredients|default:''|escapejs }}";
+        const ingredients = ingredientsStr.split(",").map((s) => s.trim()).filter(Boolean);
+
+        if (!ingredients.length) {
+          setRoadmapError("성분 정보가 부족하여 로드맵을 생성할 수 없습니다.");
+          return;
         }
 
-        const uniqueId = "products-" + Math.random().toString(36).substr(2, 9);
+        const query = ingredients.map((value) => `ingredients=${encodeURIComponent(value)}`).join("&");
 
-        let html = `
-                <div class="mb-4 border border-gray-200 rounded-lg overflow-hidden">
-                    <div class="bg-gray-50 p-3 flex justify-between items-center">
-                        <span class="font-bold text-gray-800">${ingredientTitle} <span class="text-gray-500 text-sm font-normal ml-2">(${products.length} 품목)</span></span>
-                        <button onclick="toggleProducts('${uniqueId}')" class="text-blue-600 font-semibold text-sm hover:underline focus:outline-none flex items-center">
-                            대체 가능 제품 보기 확인 <i class="fas fa-chevron-down text-xs ml-1"></i>
-                        </button>
-                    </div>
-                    <div id="${uniqueId}" class="hidden bg-white">
-                        <ul class="divide-y divide-gray-100 max-h-60 overflow-y-auto">
-            `;
+        fetch(`/api/drugs/us-roadmap/?${query}`)
+          .then((res) => {
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            return res.json();
+          })
+          .then(renderRoadmap)
+          .catch((err) => setRoadmapError(`로드맵 조회 실패: ${err.message}`));
+      }
 
-        products.forEach((p) => {
-          const pTitle = p.brand_name || "이름 없음";
-          const pPurpose = p.purpose || "설명 없음";
-          const pIngr =
-            p.active_ingredient && p.active_ingredient !== "Unknown"
-              ? `<span class="text-indigo-500 font-semibold ml-2 text-xs">(${p.active_ingredient})</span>`
-              : "";
+      function initDurGate() {
+        const gate = document.getElementById("durGate");
+        if (!gate) return;
 
-          html += `
-                    <li class="p-3 text-sm hover:bg-gray-50 flex flex-col justify-center">
-                        <div class="font-bold text-gray-700">${pTitle} ${pIngr}</div>
-                        <div class="text-gray-500 text-xs mt-1 truncate" title="${pPurpose}">${pPurpose}</div>
-                    </li>
-                `;
+        const list = document.getElementById("durGateList");
+        const check = document.getElementById("durGateCheck");
+        const confirm = document.getElementById("durGateConfirm");
+        if (!list || !check || !confirm) return;
+
+        document.body.classList.add("dur-gate-locked");
+        let scrolledToEnd = list.scrollHeight <= list.clientHeight + 2;
+
+        function updateState() {
+          confirm.disabled = !(scrolledToEnd && check.checked);
+        }
+
+        list.addEventListener("scroll", () => {
+          if (list.scrollTop + list.clientHeight >= list.scrollHeight - 4) {
+            scrolledToEnd = true;
+          }
+          updateState();
         });
 
-        html += `
-                        </ul>
-                    </div>
-                </div>
-            `;
-        return html;
+        check.addEventListener("change", updateState);
+        confirm.addEventListener("click", () => {
+          gate.remove();
+          document.body.classList.remove("dur-gate-locked");
+        });
+
+        updateState();
       }
 
       window.toggleProducts = function (id) {
         const el = document.getElementById(id);
-        if (el.classList.contains("hidden")) {
-          el.classList.remove("hidden");
-        } else {
-          el.classList.add("hidden");
-        }
+        if (!el) return;
+        el.classList.toggle("open");
       };
+
+      document.addEventListener("DOMContentLoaded", () => {
+        initDurGate();
+        fetchRoadmap();
+      });
     </script>
   </body>
 </html>

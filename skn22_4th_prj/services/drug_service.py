@@ -4,6 +4,7 @@ from asgiref.sync import sync_to_async
 from django.db.models import Q
 import asyncio
 import re
+from services.ingredient_utils import canonicalize_ingredient_name
 
 logger = logging.getLogger(__name__)
 
@@ -20,18 +21,52 @@ class DrugService:
     }
 
     @classmethod
+    def _normalize_ingredient_tokens(cls, values):
+        tokens = []
+        seen = set()
+        for value in values or []:
+            raw = str(value or "").upper()
+            if not raw:
+                continue
+            parts = re.split(r",|/|;|\bAND\b|\bWITH\b|\+", raw, flags=re.IGNORECASE)
+            for part in parts:
+                token = part.strip()
+                if not token:
+                    continue
+                token = re.sub(r"\([^)]*\)", " ", token)
+                token = re.sub(
+                    r"\b\d+(?:\.\d+)?\s*(MG|MCG|G|ML|%)\b",
+                    " ",
+                    token,
+                    flags=re.IGNORECASE,
+                )
+                token = re.sub(r"[^A-Z0-9\s\-]", " ", token)
+                token = re.sub(r"\s+", " ", token).strip()
+                if not token:
+                    continue
+                token = canonicalize_ingredient_name(token)
+                if not token or token in seen:
+                    continue
+                seen.add(token)
+                tokens.append(token)
+        return tokens
+
+    @classmethod
     async def search_fda(cls, name: str):
         """
         특정 제품명으로 FDA 정보 검색 (비동기)
         상세 정보(적응증, 경고, 용법)를 포함하여 반환
         """
-        params = {
-            "search": f'(openfda.brand_name:"{name}"+OR+openfda.generic_name:"{name}")+AND+{cls.FDA_OTC_FILTER}',
-        }
+        url = (
+            f"{cls.FDA_BASE_URL}"
+            f'?search=(openfda.brand_name:"{name}"+OR+openfda.generic_name:"{name}")'
+            f"+AND+{cls.FDA_OTC_FILTER}"
+            f"&limit=1"
+        )
 
         async with httpx.AsyncClient(timeout=10.0) as client:
             try:
-                res = await client.get(cls.FDA_BASE_URL, params=params)
+                res = await client.get(url)
                 if res.status_code != 200:
                     return None
 
@@ -46,10 +81,14 @@ class DrugService:
                 generic_names = openfda.get("generic_name", [])
                 substance_names = openfda.get("substance_name", [])
 
-                combined_ingrs = list(set(generic_names + substance_names))
+                combined_ingrs = cls._normalize_ingredient_tokens(
+                    generic_names + substance_names
+                )
 
                 if not combined_ingrs:
-                    combined_ingrs = result.get("active_ingredient", [])
+                    combined_ingrs = cls._normalize_ingredient_tokens(
+                        result.get("active_ingredient", [])
+                    )
 
                 ingr_text = (
                     ", ".join(combined_ingrs)
@@ -143,12 +182,14 @@ class DrugService:
 
     @classmethod
     async def get_fda_warnings_by_ingr(cls, ingr_name: str):
-        params = {
-            "search": f'openfda.generic_name:"{ingr_name}"+AND+{cls.FDA_OTC_FILTER}',
-        }
+        url = (
+            f"{cls.FDA_BASE_URL}"
+            f'?search=openfda.generic_name:"{ingr_name}"+AND+{cls.FDA_OTC_FILTER}'
+            f"&limit=1"
+        )
         async with httpx.AsyncClient(timeout=5.0) as client:
             try:
-                res = await client.get(cls.FDA_BASE_URL, params=params)
+                res = await client.get(url)
                 if res.status_code == 200:
                     data = res.json().get("results", [])
                     if data:

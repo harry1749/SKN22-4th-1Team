@@ -1,239 +1,668 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>증상 분석 결과 - {{ symptom }}</title>
 
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>증상 기반 성분 가이드 - {{ symptom }}</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
-  <style>
-    .accordion-content {
-      max-height: 0;
-      overflow: hidden;
-      transition: max-height 0.3s ease;
-    }
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Noto+Sans+KR:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
 
-    .accordion-content.open {
-      max-height: 1000px;
-    }
+    <style>
+      :root {
+        --ink-900: #07211d;
+        --ink-700: #2b4a44;
+        --line: #d2e7df;
+        --safe-700: #147247;
+        --safe-100: #e8f8ef;
+        --warn-700: #b43232;
+        --warn-100: #fff1f1;
+      }
 
-    .badge-safe {
-      background: #dcfce7;
-      color: #15803d;
-    }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
 
-    .badge-unsafe {
-      background: #fee2e2;
-      color: #b91c1c;
-    }
-  </style>
-</head>
+      body {
+        min-height: 100vh;
+        font-family: "Sora", "Noto Sans KR", sans-serif;
+        color: var(--ink-900);
+        background:
+          radial-gradient(900px 420px at 105% -10%, #d9fff3 0%, transparent 60%),
+          radial-gradient(850px 360px at -10% 110%, #ffe8cf 0%, transparent 60%),
+          #f4faf7;
+      }
 
-<body class="bg-gray-50 text-gray-900">
-  <div class="max-w-3xl mx-auto p-6">
-    <!-- 뒤로가기 -->
-    <div class="mb-6">
-      <a href="/" class="text-blue-600 hover:text-blue-800 font-semibold flex items-center">
-        <i class="fas fa-arrow-left mr-2"></i> 다시 검색하기
-      </a>
-    </div>
+      .wrap {
+        width: min(1160px, calc(100% - 2rem));
+        margin: 1rem auto 2rem;
+      }
 
-    <!-- 헤더 + AI 전체 요약 -->
-    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 mb-6">
-      <div class="flex items-center mb-5">
-        <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 mr-4">
-          <i class="fas fa-stethoscope text-xl"></i>
-        </div>
-        <div>
-          <h1 class="text-2xl font-bold text-gray-800">증상 분석 결과</h1>
-          <p class="text-gray-500">
-            입력하신 증상:
-            <span class="text-blue-600 font-bold">"{{ symptom }}"</span>
-          </p>
-        </div>
-      </div>
+      .back {
+        display: inline-block;
+        margin-bottom: 0.9rem;
+        text-decoration: none;
+        color: #1f5f53;
+        font-weight: 700;
+        font-size: 0.9rem;
+      }
 
-      {% if answer %}
-      <div class="bg-blue-50 rounded-xl p-5 text-gray-700 leading-relaxed text-base shadow-inner mb-0">
-        <span class="inline-block bg-blue-600 text-white text-xs font-bold px-2 py-1 rounded mr-2">AI 종합 안내</span>
-        {{ answer }}
-      </div>
-      {% endif %}
-    </div>
+      .hero,
+      .card,
+      .notice,
+      .side-panel {
+        background: #ffffff;
+        border: 1px solid var(--line);
+        border-radius: 20px;
+        box-shadow: 0 16px 36px rgba(4, 37, 32, 0.08);
+      }
 
-    <!-- 성분별 카드 목록 -->
-    {% if ingredients_data %}
-    <div class="space-y-5 mb-6">
-      {% for ing in ingredients_data %}
-      <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden {% if forloop.counter > 5 %}extra-ingredient hidden{% endif %}">
-        <!-- 카드 헤더 -->
-        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-          <div class="flex items-center gap-3">
-            {% if ing.can_take %}
-            <span class="badge-safe text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1">
-              <i class="fas fa-check-circle"></i> 복용 가능
-            </span>
-            {% else %}
-            <span class="badge-unsafe text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1">
-              <i class="fas fa-times-circle"></i> 주의 필요
-            </span>
-            {% endif %}
-            <h2 class="text-lg font-bold text-gray-800">{{ ing.name }}</h2>
-          </div>
-          <!-- DUR 경고 유형 태그 -->
-          <div class="flex flex-wrap gap-1 justify-end">
-            {% for wtype in ing.dur_warning_types %}
-            <span class="bg-orange-100 text-orange-700 text-[11px] font-semibold px-2 py-0.5 rounded">{{ wtype }}</span>
-            {% endfor %}
-          </div>
-        </div>
+      .hero {
+        padding: 1.3rem;
+        margin-bottom: 1rem;
+      }
 
-        <!-- 판단 이유 -->
-        <div class="px-6 py-3 bg-gray-50 text-sm text-gray-600 border-b border-gray-100">
-          <i class="fas fa-info-circle text-blue-400 mr-1"></i> {{ ing.reason }}
-        </div>
+      .hero h1 {
+        font-size: clamp(1.35rem, 3vw, 1.9rem);
+        letter-spacing: -0.02em;
+      }
 
-        <!-- 제품 목록 (복용 가능한 경우) -->
-        {% if ing.can_take and ing.products %}
-        <div class="px-6 pt-4 pb-4">
-          <p class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">
-            <i class="fas fa-pills mr-1 text-indigo-400"></i>
-            미국 OTC 추천 제품
-          </p>
-          <ul class="space-y-2">
-            {% for prod in ing.products|slice:":5" %}
-            <li class="flex items-start justify-between bg-indigo-50 rounded-lg px-4 py-3">
-              <div>
-                <span class="font-bold text-indigo-900 text-sm">{{ prod.brand_name }}</span>
-                {% if prod.active_ingredient and prod.active_ingredient != 'Unknown' %}
-                <span class="text-gray-400 text-xs ml-2">({{ prod.active_ingredient }})</span>
-                {% endif %}
-                <p class="text-gray-500 text-xs mt-0.5 truncate max-w-xs" title="{{ prod.purpose }}">
-                  {{ prod.purpose }}
-                </p>
-              </div>
-            </li>
-            {% endfor %}
-          </ul>
-        </div>
-        {% elif ing.can_take %}
-        <div class="px-6 py-4 text-sm text-gray-400">
-          <i class="fas fa-box-open mr-1"></i> 검색된 OTC 제품이 없습니다.
-        </div>
+      .hero p {
+        margin-top: 0.4rem;
+        color: var(--ink-700);
+        font-size: 0.9rem;
+      }
+
+      .answer {
+        margin-top: 0.8rem;
+        border: 1px solid #dbece6;
+        background: #f8fdfa;
+        border-radius: 12px;
+        padding: 0.8rem;
+        font-size: 0.9rem;
+        line-height: 1.6;
+        white-space: pre-wrap;
+      }
+
+      .result-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1.6fr) minmax(280px, 0.95fr);
+        gap: 1rem;
+        align-items: start;
+      }
+
+      .main-area {
+        min-width: 0;
+      }
+
+      .side-area {
+        min-width: 0;
+      }
+
+      .panel-title {
+        margin-bottom: 0.65rem;
+        font-size: 1rem;
+        font-weight: 800;
+      }
+
+      .stack {
+        display: grid;
+        gap: 0.85rem;
+      }
+
+      .card {
+        overflow: hidden;
+      }
+
+      .card.dur-emphasis {
+        border-color: #ffb9b9;
+      }
+
+      .card.dur-emphasis .card-head {
+        background: linear-gradient(135deg, #fff4f4, #fffafa);
+        border-bottom-color: #ffd4d4;
+      }
+
+      .card-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.8rem;
+        padding: 0.85rem 1rem;
+        border-bottom: 1px solid #e3efe9;
+      }
+
+      .name {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        font-weight: 800;
+      }
+
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        border-radius: 999px;
+        font-size: 0.74rem;
+        font-weight: 700;
+        padding: 0.22rem 0.55rem;
+      }
+
+      .safe {
+        color: var(--safe-700);
+        background: var(--safe-100);
+      }
+
+      .warn {
+        color: var(--warn-700);
+        background: var(--warn-100);
+      }
+
+      .tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.35rem;
+      }
+
+      .tag {
+        border-radius: 999px;
+        font-size: 0.72rem;
+        font-weight: 700;
+        padding: 0.2rem 0.45rem;
+        background: #ffeddc;
+        color: #9a4f10;
+      }
+
+      .reason {
+        padding: 0.72rem 1rem;
+        background: #f8fdfa;
+        color: #39554e;
+        font-size: 0.88rem;
+        border-bottom: 1px solid #e3efe9;
+      }
+
+      .body {
+        padding: 0.85rem 1rem;
+      }
+
+      .section-title {
+        font-size: 0.8rem;
+        font-weight: 800;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        margin-bottom: 0.55rem;
+        color: #255149;
+      }
+
+      .products {
+        list-style: none;
+        display: grid;
+        gap: 0.5rem;
+      }
+
+      .products li {
+        border: 1px solid #dbece6;
+        border-radius: 10px;
+        background: #f8fdfa;
+        padding: 0.6rem;
+      }
+
+      .products strong {
+        font-size: 0.88rem;
+      }
+
+      .products p {
+        margin-top: 0.25rem;
+        color: #48655e;
+        font-size: 0.82rem;
+      }
+
+      .list-toggle {
+        margin-top: 0.4rem;
+        border: 1px solid #bde3d7;
+        background: #ffffff;
+        color: #1f5f53;
+        padding: 0.5rem 0.75rem;
+        border-radius: 10px;
+        font: inherit;
+        font-size: 0.84rem;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      .hidden-card {
+        display: none;
+      }
+
+      .side-panel {
+        padding: 1rem;
+        position: sticky;
+        top: 1rem;
+      }
+
+      .side-meta {
+        font-size: 0.83rem;
+        color: #7f2b2b;
+        margin-bottom: 0.55rem;
+      }
+
+      .dur-summary {
+        margin-bottom: 0.75rem;
+        padding: 0.7rem;
+        border: 1px solid #ffcaca;
+        border-radius: 12px;
+        background: #fff7f7;
+      }
+
+      .dur-summary h4 {
+        font-size: 0.84rem;
+        color: #8f2323;
+      }
+
+      .dur-summary p {
+        margin-top: 0.3rem;
+        color: #7f2b2b;
+        font-size: 0.8rem;
+      }
+
+      .dur-summary ul {
+        margin-top: 0.45rem;
+        list-style: none;
+        display: grid;
+        gap: 0.35rem;
+      }
+
+      .dur-summary li {
+        font-size: 0.8rem;
+        line-height: 1.4;
+        color: #6f2d2d;
+      }
+
+      .caution-list {
+        display: grid;
+        gap: 0.6rem;
+        max-height: calc(100vh - 260px);
+        overflow: auto;
+        padding-right: 0.2rem;
+      }
+
+      .caution-card {
+        border: 1px solid #ffd5d5;
+        background: #fff9f9;
+        border-radius: 12px;
+        padding: 0.7rem;
+      }
+
+      .caution-card h3 {
+        font-size: 0.86rem;
+        color: #8f2323;
+        margin-bottom: 0.35rem;
+      }
+
+      .caution-list ul {
+        list-style: none;
+        display: grid;
+        gap: 0.3rem;
+      }
+
+      .caution-list li,
+      .caution-card p {
+        font-size: 0.8rem;
+        color: #6f2d2d;
+        line-height: 1.45;
+      }
+
+      .caution-fda {
+        margin-top: 0.5rem;
+        padding-top: 0.45rem;
+        border-top: 1px solid #ffdede;
+      }
+
+      .side-empty {
+        font-size: 0.84rem;
+        color: #5c756f;
+      }
+
+      .notice {
+        margin-top: 1rem;
+        padding: 0.9rem;
+        border-color: #ffe0c8;
+        background: #fff8f0;
+      }
+
+      .notice h3 {
+        font-size: 0.9rem;
+        color: #9a4f10;
+      }
+
+      .notice p {
+        margin-top: 0.4rem;
+        color: #7b4a1e;
+        font-size: 0.84rem;
+        line-height: 1.55;
+      }
+
+      body.dur-gate-locked {
+        overflow: hidden;
+      }
+
+      .dur-gate-backdrop {
+        position: fixed;
+        inset: 0;
+        z-index: 1200;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 1rem;
+        background: rgba(4, 26, 22, 0.7);
+        backdrop-filter: blur(2px);
+      }
+
+      .dur-gate-modal {
+        width: min(760px, 100%);
+        max-height: calc(100vh - 2rem);
+        overflow: auto;
+        border-radius: 16px;
+        border: 2px solid #ffb9b9;
+        background: #ffffff;
+        box-shadow: 0 18px 42px rgba(3, 28, 24, 0.35);
+        padding: 1rem;
+      }
+
+      .dur-gate-title {
+        color: #9f2121;
+        font-size: 1rem;
+        font-weight: 800;
+      }
+
+      .dur-gate-desc {
+        margin-top: 0.35rem;
+        color: #6f2d2d;
+        font-size: 0.86rem;
+        line-height: 1.45;
+      }
+
+      .dur-gate-list {
+        margin-top: 0.75rem;
+        max-height: 38vh;
+        overflow: auto;
+        border: 1px solid #ffd6d6;
+        border-radius: 12px;
+        background: #fff7f7;
+        padding: 0.7rem;
+        display: grid;
+        gap: 0.5rem;
+      }
+
+      .dur-gate-item {
+        border: 1px solid #ffe0e0;
+        border-radius: 10px;
+        background: #ffffff;
+        padding: 0.55rem;
+      }
+
+      .dur-gate-item p {
+        margin-top: 0.28rem;
+        color: #6f2d2d;
+        font-size: 0.82rem;
+        line-height: 1.45;
+      }
+
+      .dur-gate-ack {
+        margin-top: 0.7rem;
+        display: flex;
+        align-items: center;
+        gap: 0.45rem;
+        font-size: 0.84rem;
+        color: #4f2a2a;
+        font-weight: 600;
+      }
+
+      .dur-gate-btn {
+        margin-top: 0.7rem;
+        width: 100%;
+        border: 0;
+        border-radius: 10px;
+        padding: 0.7rem 0.9rem;
+        font: inherit;
+        font-size: 0.9rem;
+        font-weight: 800;
+        cursor: pointer;
+        color: #ffffff;
+        background: #b43232;
+      }
+
+      .dur-gate-btn:disabled {
+        cursor: not-allowed;
+        background: #d8a4a4;
+      }
+
+      @media (max-width: 980px) {
+        .wrap {
+          width: min(1160px, calc(100% - 1rem));
+        }
+
+        .result-layout {
+          grid-template-columns: 1fr;
+        }
+
+        .side-panel {
+          position: static;
+        }
+
+        .card-head {
+          flex-direction: column;
+          align-items: flex-start;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <main class="wrap">
+      <a href="/" class="back">&larr; 다시 검색하기</a>
+
+      <section class="hero">
+        <h1>증상 분석 결과</h1>
+        <p>입력 증상: "{{ symptom }}"</p>
+        {% if answer %}
+        <div class="answer">{{ answer }}</div>
         {% endif %}
+      </section>
 
-        <!-- DUR 상세 (주의 필요 성분 또는 경고가 있는 경우) -->
-        {% if ing.kr_durs or ing.fda_warning %} {% with dur_id="dur-"|add:ing.name %}
-        <div class="border-t border-gray-100">
-          <button onclick="toggleAccordion('{{ dur_id }}')"
-            class="w-full px-6 py-3 text-sm text-gray-500 hover:text-gray-700 flex items-center justify-between font-medium transition-colors">
-            <span><i class="fas fa-shield-alt mr-1 text-red-400"></i> KR·US 안전
-              정보 상세</span>
-            <i class="fas fa-chevron-down text-xs" id="{{ dur_id }}-icon"></i>
-          </button>
-          <div id="{{ dur_id }}" class="accordion-content">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 px-6 pb-5">
-              <!-- 한국 DUR -->
-              <div class="bg-white rounded-lg border border-gray-100 p-4 shadow-sm">
-                <h4 class="font-bold text-red-600 mb-2 flex items-center text-sm">
-                  <img src="https://upload.wikimedia.org/wikipedia/commons/0/09/Flag_of_South_Korea.svg"
-                    class="w-5 h-3 mr-2 border" />
-                  한국 DUR (식약처)
-                </h4>
-                {% if ing.kr_durs %}
-                <ul class="space-y-2">
-                  {% for dur in ing.kr_durs %}
-                  <li class="text-xs">
-                    <span class="inline-block bg-red-100 text-red-700 px-2 py-0.5 rounded font-bold mb-1">{{ dur.type
-                      }}</span>
-                    <p class="text-gray-600">{{ dur.warning }}</p>
+      {% if ingredients_data %}
+      <section class="result-layout">
+        <section class="main-area">
+          <h2 class="panel-title">성분/제품 안내</h2>
+          <div class="stack">
+            {% for ing in ingredients_data %}
+            <article class="card {% if ing.kr_durs or ing.fda_warning %}dur-emphasis {% endif %}{% if forloop.counter > 5 %}hidden-card extra-ingredient{% endif %}">
+              <header class="card-head">
+                <div class="name">
+                  {% if ing.can_take %}
+                  <span class="badge safe">복용 가능</span>
+                  {% else %}
+                  <span class="badge warn">주의 필요</span>
+                  {% endif %}
+                  <span>{{ ing.name }}</span>
+                </div>
+                <div class="tags">
+                  {% for wtype in ing.dur_warning_types %}
+                  <span class="tag">{{ wtype }}</span>
+                  {% endfor %}
+                </div>
+              </header>
+
+              <div class="reason">{{ ing.reason }}</div>
+
+              <div class="body">
+                {% if ing.can_take and ing.products %}
+                <h3 class="section-title">추천 OTC 제품</h3>
+                <ul class="products">
+                  {% for prod in ing.products|slice:":5" %}
+                  <li>
+                    <strong>{{ prod.brand_name }}</strong>
+                    {% if prod.active_ingredient and prod.active_ingredient != 'Unknown' %}
+                    <span>({{ prod.active_ingredient }})</span>
+                    {% endif %}
+                    <p>{{ prod.purpose }}</p>
                   </li>
                   {% endfor %}
                 </ul>
-                {% else %}
-                <p class="text-gray-400 text-xs">
-                  등록된 주의사항이 없습니다.
-                </p>
+                {% elif ing.can_take %}
+                <p>검색된 OTC 제품이 없습니다.</p>
                 {% endif %}
               </div>
-              <!-- 미국 FDA -->
-              <div class="bg-white rounded-lg border border-gray-100 p-4 shadow-sm">
-                <h4 class="font-bold text-blue-600 mb-2 flex items-center text-sm">
-                  <img src="https://upload.wikimedia.org/wikipedia/en/a/a4/Flag_of_the_United_States.svg"
-                    class="w-5 h-3 mr-2 border" />
-                  미국 FDA (Warnings)
-                </h4>
-                {% if ing.fda_warning %}
-                <p class="text-xs text-gray-600 leading-relaxed">
-                  {{ ing.fda_warning }}
-                </p>
-                {% else %}
-                <p class="text-gray-400 text-xs">FDA 경고 문구가 없습니다.</p>
-                {% endif %}
-              </div>
-            </div>
+            </article>
+            {% endfor %}
           </div>
+
+          {% if ingredients_data|length > 5 %}
+          <button type="button" class="list-toggle" onclick="toggleAllIngredients(this)">
+            전체 성분 보기 ({{ ingredients_data|length }}개)
+          </button>
+          {% endif %}
+        </section>
+
+        <aside class="side-area">
+          <section class="side-panel">
+            <h2 class="panel-title">성분별 주의사항</h2>
+            {% if dur_details %}
+            <p class="side-meta">총 {{ dur_details|length }}건의 DUR 주의 항목이 있습니다.</p>
+            {% endif %}
+
+            {% if dur_summary.lines %}
+            <div class="dur-summary">
+              <h4>중요 항목 요약</h4>
+              {% if dur_summary.type_summary %}
+              <p>유형: {{ dur_summary.type_summary }}</p>
+              {% endif %}
+              <ul>
+                {% for line in dur_summary.lines %}
+                <li>{{ line }}</li>
+                {% endfor %}
+              </ul>
+              {% if dur_summary.has_more %}
+              <p>추가 항목은 아래 성분별 상세에서 확인하세요.</p>
+              {% endif %}
+            </div>
+            {% endif %}
+
+            <div class="caution-list">
+              {% for ing in ingredients_data %}
+              {% if ing.kr_durs or ing.fda_warning %}
+              <article class="caution-card">
+                <h3>{{ ing.name }}</h3>
+                {% if ing.kr_durs %}
+                <ul>
+                  {% for dur in ing.kr_durs %}
+                  <li><strong>{{ dur.type }}</strong> - {{ dur.warning }}</li>
+                  {% endfor %}
+                </ul>
+                {% endif %}
+                {% if ing.fda_warning %}
+                <div class="caution-fda">
+                  <p><strong>FDA</strong> - {{ ing.fda_warning }}</p>
+                </div>
+                {% endif %}
+              </article>
+              {% endif %}
+              {% endfor %}
+
+              {% if not dur_details %}
+              <p class="side-empty">확인된 DUR 주의사항이 없습니다.</p>
+              {% endif %}
+            </div>
+          </section>
+        </aside>
+      </section>
+      {% elif answer %}
+      <section class="hero">
+        <div class="answer">{{ answer }}</div>
+      </section>
+      {% endif %}
+
+      <section class="notice">
+        <h3>주의사항</h3>
+        <p>본 결과는 참고용 안내입니다. 실제 복용 결정은 의사 또는 약사와 상담 후 진행하세요.</p>
+      </section>
+    </main>
+
+    {% if dur_details %}
+    <section id="durGate" class="dur-gate-backdrop" aria-modal="true" role="dialog">
+      <div class="dur-gate-modal">
+        <h2 class="dur-gate-title">DUR 확인이 필요합니다</h2>
+        <p class="dur-gate-desc">아래 DUR 안내를 끝까지 확인한 뒤 체크해야 계속 진행할 수 있습니다.</p>
+        <div id="durGateList" class="dur-gate-list">
+          {% for dur in dur_details %}
+          <article class="dur-gate-item">
+            <strong>{{ dur.type }} | {% firstof dur.ingr_name dur.ingredient %}</strong>
+            <p>{% firstof dur.warning_msg dur.warning %}</p>
+          </article>
+          {% endfor %}
         </div>
-        {% endwith %} {% endif %}
+        <label class="dur-gate-ack">
+          <input id="durGateCheck" type="checkbox" /> DUR 안내를 확인했습니다.
+        </label>
+        <button id="durGateConfirm" class="dur-gate-btn" type="button" disabled>확인하고 결과 보기</button>
       </div>
-      {% endfor %}
-    </div>
-    {% if ingredients_data|length > 5 %}
-    <div class="text-center mb-6">
-      <button type="button" onclick="toggleAllIngredients(this)"
-        class="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-blue-200 bg-white text-blue-700 text-sm font-semibold hover:bg-blue-50 transition-colors">
-        전체 성분 보기 ({{ ingredients_data|length }}개)
-      </button>
-    </div>
+    </section>
     {% endif %}
 
-    <!-- 데이터 없을 때 폴백 -->
-    {% elif answer %}
-    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 mb-6">
-      <div class="bg-blue-50 rounded-xl p-5 text-gray-700 leading-relaxed text-base" style="white-space: pre-wrap">
-        {{ answer }}
-      </div>
-    </div>
-    {% endif %}
+    <script>
+      function toggleAllIngredients(button) {
+        const extras = document.querySelectorAll(".extra-ingredient");
+        if (!extras.length || !button) return;
 
-    <!-- 면책 공고 -->
-    <div class="bg-orange-50 rounded-xl p-5 border border-orange-100 flex items-start mb-6">
-      <i class="fas fa-exclamation-triangle text-orange-400 mt-1 mr-3"></i>
-      <div class="text-xs text-orange-800 leading-5">
-        <p class="font-bold mb-1 underline">주의사항 및 면책 공고</p>
-        본 정보는 한국 식약처 DUR 데이터 및 FDA 정보를 바탕으로 AI가 생성한
-        참고용 가이드입니다. 개별 환자의 상태에 따라 적합한 약물이 달라질 수
-        있으므로,
-        <strong>반드시 복용 전 미국 현지 약사 또는 의사에게 성분명을 제시하고
-          상담받으시기 바랍니다.</strong>
-      </div>
-    </div>
-  </div>
+        const hasHidden = Array.from(extras).some((el) => el.classList.contains("hidden-card"));
+        extras.forEach((el) => {
+          el.classList.toggle("hidden-card", !hasHidden);
+        });
 
-  <script>
-    function toggleAllIngredients(button) {
-      const extras = document.querySelectorAll(".extra-ingredient");
-      if (!extras.length || !button) return;
-      const hasHidden = Array.from(extras).some((el) => el.classList.contains("hidden"));
-      extras.forEach((el) => el.classList.toggle("hidden", !hasHidden));
-      button.textContent = hasHidden
-        ? "성분 접기"
-        : `전체 성분 보기 (${extras.length + 5}개)`;
-    }
-
-    function toggleAccordion(id) {
-      const el = document.getElementById(id);
-      const icon = document.getElementById(id + "-icon");
-      if (!el) return;
-      const isOpen = el.classList.contains("open");
-      el.classList.toggle("open", !isOpen);
-      if (icon) {
-        icon.style.transform = isOpen ? "" : "rotate(180deg)";
-        icon.style.transition = "transform 0.3s ease";
+        button.textContent = hasHidden
+          ? "성분 숨기기"
+          : `전체 성분 보기 (${extras.length + 5}개)`;
       }
-    }
-  </script>
-</body>
 
+      function initDurGate() {
+        const gate = document.getElementById("durGate");
+        if (!gate) return;
+
+        const list = document.getElementById("durGateList");
+        const check = document.getElementById("durGateCheck");
+        const confirm = document.getElementById("durGateConfirm");
+        if (!list || !check || !confirm) return;
+
+        document.body.classList.add("dur-gate-locked");
+        let scrolledToEnd = list.scrollHeight <= list.clientHeight + 2;
+
+        function updateState() {
+          confirm.disabled = !(scrolledToEnd && check.checked);
+        }
+
+        list.addEventListener("scroll", () => {
+          if (list.scrollTop + list.clientHeight >= list.scrollHeight - 4) {
+            scrolledToEnd = true;
+          }
+          updateState();
+        });
+
+        check.addEventListener("change", updateState);
+        confirm.addEventListener("click", () => {
+          gate.remove();
+          document.body.classList.remove("dur-gate-locked");
+        });
+
+        updateState();
+      }
+
+      document.addEventListener("DOMContentLoaded", initDurGate);
+    </script>
+  </body>
 </html>

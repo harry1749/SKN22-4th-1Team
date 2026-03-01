@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import re
 
 try:
     from rest_framework.views import APIView
@@ -17,6 +18,7 @@ except ModuleNotFoundError:
 from services.supabase_service import SupabaseService
 from services.map_service import MapService
 from services.drug_service import DrugService
+from services.ingredient_utils import canonicalize_ingredient_name
 
 logger = logging.getLogger(__name__)
 
@@ -36,9 +38,39 @@ class DrugSearchView(APIView):
 
 
 class UsRoadmapView(APIView):
+    @staticmethod
+    def _normalize_ingredients(raw_ingredients):
+        parsed = []
+        seen = set()
+        for raw in raw_ingredients or []:
+            if not raw:
+                continue
+            chunks = re.split(r",|/|;|\bAND\b|\bWITH\b|\+", str(raw), flags=re.IGNORECASE)
+            for chunk in chunks:
+                token = chunk.strip().upper()
+                if not token:
+                    continue
+                token = re.sub(r"\([^)]*\)", " ", token)
+                token = re.sub(
+                    r"\b\d+(?:\.\d+)?\s*(MG|MCG|G|ML|%)\b",
+                    " ",
+                    token,
+                    flags=re.IGNORECASE,
+                )
+                token = re.sub(r"[^A-Z0-9\s\-]", " ", token)
+                token = re.sub(r"\s+", " ", token).strip()
+                if not token:
+                    continue
+                token = canonicalize_ingredient_name(token)
+                if not token or token in seen:
+                    continue
+                seen.add(token)
+                parsed.append(token)
+        return parsed
+
     async def get(self, request):
         params = getattr(request, "query_params", request.GET)
-        ingredients = params.getlist("ingredients")
+        ingredients = self._normalize_ingredients(params.getlist("ingredients"))
         kr_dosage_mg = float(params.get("kr_dosage_mg", 0.0))
 
         if not ingredients:
