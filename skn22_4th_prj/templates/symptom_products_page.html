@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>복용 가능 성분 제품 추천 - {{ symptom }}</title>
+    <title>복용 안전성 기반 제품 안내 - {{ symptom }}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -118,10 +118,21 @@
         gap: 0.6rem;
       }
 
+      .name-wrap {
+        min-width: 0;
+      }
+
       .name {
         font-size: 1.05rem;
         font-weight: 800;
         letter-spacing: -0.01em;
+      }
+
+      .ingredient-efficacy {
+        margin-top: 0.2rem;
+        font-size: 0.78rem;
+        color: #4a6962;
+        line-height: 1.35;
       }
 
       .badge {
@@ -130,12 +141,37 @@
         padding: 0.2rem 0.55rem;
         font-size: 0.73rem;
         font-weight: 700;
+      }
+
+      .badge.recommend {
         background: var(--safe-100);
         color: var(--safe-700);
       }
 
+      .badge.caution {
+        background: #fff3d9;
+        color: #8c5a00;
+      }
+
       .slot {
         margin-top: 0.7rem;
+      }
+
+      .group {
+        border: 1px solid #d6e9e2;
+        border-radius: 14px;
+        background: #fbfefd;
+        padding: 0.7rem;
+      }
+
+      .group h2 {
+        font-size: 0.96rem;
+      }
+
+      .group p {
+        margin-top: 0.2rem;
+        color: #43645d;
+        font-size: 0.82rem;
       }
 
       .section-title {
@@ -300,6 +336,26 @@
         font-size: 0.79rem;
       }
 
+      .notice {
+        margin-top: 1rem;
+        background: #fff;
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        box-shadow: 0 16px 36px rgba(4, 37, 32, 0.08);
+        padding: 0.85rem 1rem;
+      }
+
+      .notice h3 {
+        font-size: 0.96rem;
+      }
+
+      .notice p {
+        margin-top: 0.35rem;
+        color: #3e5f58;
+        font-size: 0.85rem;
+        line-height: 1.5;
+      }
+
       @media (max-width: 980px) {
         .wrap {
           width: min(1140px, calc(100% - 1rem));
@@ -323,42 +379,79 @@
       </div>
 
       <section class="hero">
-        <h1>복용 가능 성분 제품 추천</h1>
+        <h1>복용 안전성 기반 제품 안내</h1>
         <p>입력 증상: "{{ symptom }}"</p>
         <p id="productsStatus" class="status">
-          복용 가능 후보를 조회 중입니다. 후보군에서 제품이 확인된 성분 최대 5개를 자동으로 표시합니다.
+          복용 안전성/주의/금지 기준으로 분류해 제품 후보를 조회 중입니다. 제품이 확인된 성분 최대 5개를 자동으로 표시합니다.
         </p>
       </section>
 
       <section class="grid">
         <section class="stack">
-          {% for ing in ingredients_data %}
-          {% if ing.can_take %}
-          <article
-            class="card{% if forloop.counter > 5 %} hidden-card{% endif %}"
-            data-ingredient="{{ ing.name }}"
-            data-candidate-order="{{ forloop.counter0 }}"
-            data-has-products="-1"
-          >
-            <div class="head">
-              <div class="name">{{ ing.name }}</div>
-              <span class="badge">복용 가능</span>
-            </div>
-            <div class="slot" data-role="product-slot">
-              <p class="empty">제품 조회 중...</p>
-            </div>
-          </article>
-          {% endif %}
-          {% endfor %}
+          <section class="group">
+            <h2>복용 안전성 성분</h2>
+            <p>DUR 금기/주의 근거가 상대적으로 적은 성분입니다.</p>
+            {% for ing in ingredients_data %}
+            {% if ing.can_take and not ing.dur_warning_types %}
+            <article
+              class="card"
+              data-ingredient="{{ ing.name }}"
+              data-candidate-order="{{ forloop.counter0 }}"
+              data-has-products="-1"
+              data-safety-level="recommend"
+            >
+              <div class="head">
+                <div class="name-wrap">
+                  <div class="name">{{ ing.name }}</div>
+                  <div class="ingredient-efficacy">{{ ing.efficacy_brief|default:"해당 증상 완화 목적 성분" }}</div>
+                </div>
+                <span class="badge recommend">복용 안전성</span>
+              </div>
+              <div class="slot" data-role="product-slot">
+                <p class="empty">제품 조회 중...</p>
+              </div>
+            </article>
+            {% endif %}
+            {% endfor %}
+          </section>
+
+          <section class="group">
+            <h2>주의 필요 성분</h2>
+            <p>복용은 가능하나 DUR 주의사항이 있어 전문가 확인이 필요한 성분입니다.</p>
+            {% for ing in ingredients_data %}
+            {% if ing.can_take and ing.dur_warning_types %}
+            <article
+              class="card"
+              data-ingredient="{{ ing.name }}"
+              data-candidate-order="{{ forloop.counter0 }}"
+              data-has-products="-1"
+              data-safety-level="caution"
+            >
+              <div class="head">
+                <div class="name-wrap">
+                  <div class="name">{{ ing.name }}</div>
+                  <div class="ingredient-efficacy">{{ ing.efficacy_brief|default:"해당 증상 완화 목적 성분" }}</div>
+                </div>
+                <span class="badge caution">주의 필요</span>
+              </div>
+              <div class="meta">{{ ing.reason }}</div>
+              <div class="slot" data-role="product-slot">
+                <p class="empty">제품 조회 중...</p>
+              </div>
+            </article>
+            {% endif %}
+            {% endfor %}
+          </section>
         </section>
 
         <section class="blocked">
-          <h2>복용 제한 성분 안내</h2>
+          <h2>복용 위험 성분 안내</h2>
           <ul>
             {% for ing in ingredients_data %}
             {% if not ing.can_take %}
             <li>
               <strong>{{ ing.name }}</strong>
+              <div class="ingredient-efficacy">{{ ing.efficacy_brief|default:"해당 증상 완화 목적 성분" }}</div>
               <div class="meta">{{ ing.reason }}</div>
             </li>
             {% endif %}
@@ -367,6 +460,11 @@
             {% endfor %}
           </ul>
         </section>
+      </section>
+
+      <section class="notice">
+        <h3>주의사항</h3>
+        <p>참고용으로만 사용하시기 바랍니다. 의학적인 자문이나 진단이 필요한 경우 전문가에게 문의하세요. AI 답변에 오류가 있을 수 있습니다.</p>
       </section>
     </main>
 
@@ -396,13 +494,13 @@
           return "효능 요약 정보를 불러오지 못했습니다. 복용 전 용법·용량과 주의사항을 확인하세요.";
         }
 
-        const sentence = source.match(/^(.+?[.!?。！？])(\s|$)/);
+        const sentence = source.match(/^(.+?[.!?])(\s|$)/);
         let brief = sentence ? sentence[1] : source;
-        brief = brief.replace(/^효능(\/효과)?[:：]\s*/i, "").trim();
+        brief = brief.replace(/^효능(\/효과)?[:\s]*/i, "").trim();
 
         const maxLen = 96;
         if (brief.length > maxLen) {
-          brief = `${brief.slice(0, maxLen - 1).trim()}…`;
+          brief = `${brief.slice(0, maxLen - 1).trim()}...`;
         }
         return brief;
       }
@@ -470,7 +568,7 @@
         if (!products.length) {
           if (excludedProducts.length) {
             slot.innerHTML = `
-              <p class="empty">추천 후보가 추가 주성분 DUR 위험으로 제외되었습니다.</p>
+              <p class="empty">복용 안전성 후보가 추가 주성분 DUR 위험으로 제외되었습니다.</p>
               <div class="excluded-products">
                 <strong>제외된 제품 사유</strong>
                 <ul>${excludedItemsHtml}</ul>
@@ -528,7 +626,7 @@
           ? `<div class="excluded-products"><strong>추가 주성분 DUR 위험으로 제외된 제품 ${excludedProducts.length}개</strong><ul>${excludedItemsHtml}</ul></div>`
           : "";
 
-        slot.innerHTML = `<h3 class="section-title">추천 OTC 제품</h3>${noticeHtml}<ul class="products">${items}</ul>${excludedSection}`;
+        slot.innerHTML = `<h3 class="section-title">OTC 제품 후보</h3>${noticeHtml}<ul class="products">${items}</ul>${excludedSection}`;
         setBackfillCardVisibility();
       }
 
@@ -620,7 +718,7 @@
         setBackfillCardVisibility();
 
         if (!safeIngredients.length) {
-          if (statusEl) statusEl.textContent = "복용 가능 성분이 없어 제품 조회를 생략했습니다.";
+          if (statusEl) statusEl.textContent = "제품 조회 가능한 성분이 없어 안내를 생략했습니다.";
           return;
         }
 
@@ -648,7 +746,7 @@
           });
 
           if (statusEl) {
-            statusEl.textContent = `미리 조회된 결과를 먼저 표시했습니다. (후보 ${safeIngredients.length}개, 화면 최대 ${TARGET_VISIBLE_PRODUCT_CARDS}개)`;
+            statusEl.textContent = `미리 조회된 결과를 먼저 표시했습니다. (검토 대상 ${safeIngredients.length}개, 화면 최대 ${TARGET_VISIBLE_PRODUCT_CARDS}개)`;
           }
         }
 
@@ -661,7 +759,7 @@
         if (!remainingIngredients.length) {
           savePrefetchedItems(symptomTerm, safeIngredients, itemMap, true);
           if (statusEl) {
-            statusEl.textContent = `복용 가능 후보 ${safeIngredients.length}개 중 제품이 확인된 성분은 ${successCount}개이며, 화면에는 최대 ${TARGET_VISIBLE_PRODUCT_CARDS}개를 표시합니다.`;
+            statusEl.textContent = `검토 대상 ${safeIngredients.length}개 중 제품이 확인된 성분은 ${successCount}개이며, 화면에는 최대 ${TARGET_VISIBLE_PRODUCT_CARDS}개를 표시합니다.`;
           }
           return;
         }
@@ -678,7 +776,7 @@
           const batchIngredients = batches[batchIndex].filter(Boolean);
           if (!batchIngredients.length) continue;
           if (statusEl) {
-            statusEl.textContent = `제품 정보를 ${batchIndex + 1}/${batches.length} 단계로 조회 중입니다.`;
+            statusEl.textContent = `제품 후보 ${batchIndex + 1}/${batches.length} 단계 조회 중입니다.`;
           }
 
           try {
@@ -713,7 +811,7 @@
 
         savePrefetchedItems(symptomTerm, safeIngredients, itemMap, true);
         if (statusEl) {
-          statusEl.textContent = `복용 가능 후보 ${safeIngredients.length}개 중 제품이 확인된 성분은 ${successCount}개이며, 화면에는 최대 ${TARGET_VISIBLE_PRODUCT_CARDS}개를 표시합니다.`;
+          statusEl.textContent = `검토 대상 ${safeIngredients.length}개 중 제품이 확인된 성분은 ${successCount}개이며, 화면에는 최대 ${TARGET_VISIBLE_PRODUCT_CARDS}개를 표시합니다.`;
         }
       }
 

@@ -32,6 +32,75 @@ SYMPTOM_TO_FDA_TERMS = {
 
 _EMPTY_PROFILE_TOKENS = {"none", "없음", "없어요", "n/a", "na", "x"}
 
+_INGREDIENT_BENEFIT_OVERRIDES = {
+    "ACETAMINOPHEN": "통증·발열 완화",
+    "IBUPROFEN": "통증·염증·발열 완화",
+    "NAPROXEN": "통증·염증 완화",
+    "ASPIRIN": "통증·발열 완화",
+    "DEXTROMETHORPHAN": "기침 완화",
+    "GUAIFENESIN": "가래 배출 도움",
+    "LORATADINE": "알레르기 증상 완화",
+    "CETIRIZINE": "알레르기 증상 완화",
+    "DIPHENHYDRAMINE": "알레르기·콧물 완화",
+    "PHENYLEPHRINE": "코막힘 완화",
+    "PSEUDOEPHEDRINE": "코막힘 완화",
+    "FAMOTIDINE": "속쓰림·위산 완화",
+    "OMEPRAZOLE": "위산 과다 완화",
+    "LANSOPRAZOLE": "위산 과다 완화",
+    "BISMUTH SUBSALICYLATE": "복통·설사 완화",
+    "LOPERAMIDE": "설사 완화",
+    "MECLIZINE": "멀미·어지럼 완화",
+    "DIMENHYDRINATE": "멀미·구역 완화",
+}
+
+_SYMPTOM_BRIEF_MAP = {
+    "두통": "두통·통증 완화",
+    "편두통": "편두통 완화",
+    "알레르기": "알레르기 증상 완화",
+    "기침": "기침 완화",
+    "감기": "감기 증상 완화",
+    "발열": "발열 완화",
+    "소화불량": "소화불량 완화",
+    "복통": "복통 완화",
+    "염좌": "근육·관절 통증 완화",
+    "찰과상": "상처 소독·보호",
+    "화상": "화상 부위 통증 완화",
+    "곤충교상": "가려움·염증 완화",
+}
+
+_EFFICACY_KEYWORD_LABELS = [
+    (("진통", "통증", "pain"), "통증 완화"),
+    (("해열", "발열", "fever"), "발열 완화"),
+    (("소염", "염증", "anti-inflammatory", "inflammation"), "염증 완화"),
+    (("기침", "진해", "cough"), "기침 완화"),
+    (("가래", "거담", "sputum", "expectoration"), "가래 배출 도움"),
+    (("코막힘", "비충혈", "nasal congestion", "decongest"), "코막힘 완화"),
+    (("콧물", "재채기", "allergy", "antihist"), "알레르기 증상 완화"),
+    (("속쓰림", "위산", "제산", "heartburn", "acid"), "속쓰림·위산 완화"),
+    (("소화", "indigestion"), "소화불량 완화"),
+    (("복통", "abdominal"), "복통 완화"),
+    (("설사", "diarrhea"), "설사 완화"),
+    (("변비", "constipation"), "변비 완화"),
+    (("멀미", "구역", "nausea", "motion sickness"), "멀미·구역 완화"),
+    (("가려움", "itch"), "가려움 완화"),
+    (("상처", "wound"), "상처 소독·보호"),
+]
+
+_SYMPTOM_INGREDIENT_EXCLUDE = {
+    "두통": {
+        "DEXTROMETHORPHAN",
+        "GUAIFENESIN",
+        "PSEUDOEPHEDRINE",
+        "PHENYLEPHRINE",
+    },
+    "편두통": {
+        "DEXTROMETHORPHAN",
+        "GUAIFENESIN",
+        "PSEUDOEPHEDRINE",
+        "PHENYLEPHRINE",
+    },
+}
+
 
 def _to_fda_symptom_terms(symptom_term: str):
     token = str(symptom_term or "").strip().lower()
@@ -53,6 +122,18 @@ def _merge_unique_terms(*groups):
             seen.add(token)
             merged.append(token)
     return merged
+
+
+def _is_excluded_ingredient_for_symptom(symptom_term: str, ingredient_name: str) -> bool:
+    symptom_key = str(symptom_term or "").strip()
+    if not symptom_key:
+        return False
+    excluded = _SYMPTOM_INGREDIENT_EXCLUDE.get(symptom_key) or set()
+    if not excluded:
+        return False
+    normalized = canonicalize_ingredient_name(ingredient_name or "")
+    normalized = str(normalized or "").strip().upper()
+    return bool(normalized and normalized in excluded)
 
 
 def _has_user_risk_profile(user_profile):
@@ -165,6 +246,36 @@ def _collect_warning_excerpt(dur_item: dict, max_len: int = 160) -> str:
     return ""
 
 
+def _summarize_efficacy_text(
+    ingredient_name: str,
+    efficacy_text: str,
+    symptom_term: str = "",
+) -> str:
+    name = canonicalize_ingredient_name(ingredient_name or "")
+    name = str(name or "").strip().upper()
+    if name and name in _INGREDIENT_BENEFIT_OVERRIDES:
+        return _INGREDIENT_BENEFIT_OVERRIDES[name]
+
+    source = re.sub(r"\s+", " ", str(efficacy_text or "")).strip().lower()
+    labels = []
+    seen = set()
+    for keywords, label in _EFFICACY_KEYWORD_LABELS:
+        if any(keyword in source for keyword in keywords):
+            if label not in seen:
+                seen.add(label)
+                labels.append(label)
+        if len(labels) >= 2:
+            break
+    if labels:
+        return " · ".join(labels)
+
+    symptom_key = str(symptom_term or "").strip()
+    if symptom_key in _SYMPTOM_BRIEF_MAP:
+        return _SYMPTOM_BRIEF_MAP[symptom_key]
+
+    return "해당 증상 완화 목적 성분"
+
+
 def _extract_combined_partner_tokens(warning_text: str) -> list:
     raw = str(warning_text or "")
     if not raw:
@@ -233,7 +344,7 @@ def _evaluate_profile_risk_for_ingredient(
             if is_pregnant:
                 block_reasons.append("임신/수유 중 사용 금기(임부금기) 항목으로 확인되었습니다.")
             else:
-                caution_notes.append("임부/수유부 대상 금기 항목이 있어 해당 조건에서는 복용 금지입니다.")
+                caution_notes.append("임부/수유부 대상 금기 항목이 있어 해당 조건에서는 복용 위험입니다.")
             continue
 
         if is_combined_contra:
@@ -470,6 +581,17 @@ async def retrieve_data_node(state: AgentState) -> AgentState:
             max_rows=5000,
         )
         all_ingredients = [item["ingredient"] for item in ranked_ingredients]
+        ingredient_efficacy_map = {}
+        for item in ranked_ingredients:
+            name = canonicalize_ingredient_name(item.get("ingredient"))
+            if not name:
+                continue
+            name_key = str(name).strip().upper()
+            if not name_key:
+                continue
+            efficacy_text = str(item.get("sample_efficacy") or "").strip()
+            if efficacy_text and name_key not in ingredient_efficacy_map:
+                ingredient_efficacy_map[name_key] = efficacy_text
         eng_kw = _to_fda_symptom_terms(db_symptom_term)
         if not eng_kw:
             eng_kw = _to_fda_symptom_terms(keyword)
@@ -487,6 +609,11 @@ async def retrieve_data_node(state: AgentState) -> AgentState:
                 search_terms
             )
             fda_candidates = canonicalize_ingredient_list(fda_candidates)
+            fda_candidates = [
+                token
+                for token in fda_candidates
+                if not _is_excluded_ingredient_for_symptom(db_symptom_term, token)
+            ]
             if not fda_candidates:
                 synonyms = await AIService.get_symptom_synonyms(keyword or query)
                 if synonyms:
@@ -495,12 +622,19 @@ async def retrieve_data_node(state: AgentState) -> AgentState:
                         search_terms
                     )
                     fda_candidates = canonicalize_ingredient_list(fda_candidates)
+                    fda_candidates = [
+                        token
+                        for token in fda_candidates
+                        if not _is_excluded_ingredient_for_symptom(db_symptom_term, token)
+                    ]
 
         if ranked_ingredients:
             merged_scores = {}
             for item in ranked_ingredients:
                 name = canonicalize_ingredient_name(item.get("ingredient"))
                 if not name:
+                    continue
+                if _is_excluded_ingredient_for_symptom(db_symptom_term, name):
                     continue
                 merged_scores[name] = merged_scores.get(name, 0) + int(item.get("score", 0) or 0)
             scored_candidates = [
@@ -510,38 +644,33 @@ async def retrieve_data_node(state: AgentState) -> AgentState:
         else:
             scored_candidates = []
 
-        # Primary source of truth:
-        # unified_drug_info.efficacy matches symptom -> extract ingredients from main_ingr_eng.
-        # Keep top-score ingredients first for low-latency first response.
+        # Primary selection:
+        # Let LLM choose direct symptom-relief ingredients from DB-extracted candidates.
         selected_ingredients = []
         if scored_candidates:
+            selected_ingredients = await AIService.select_direct_symptom_ingredients(
+                symptom=db_symptom_term or keyword or query,
+                candidates=scored_candidates,
+                top_n=5,
+            )
+            selected_ingredients = canonicalize_ingredient_list(selected_ingredients)[:5]
             selected_ingredients = [
-                item["ingredient"]
-                for item in scored_candidates
-                if item.get("ingredient")
-            ][:10]
-            if selected_ingredients and fda_candidates:
-                selected_ingredients = canonicalize_ingredient_list(
-                    selected_ingredients
-                )[:10]
-                overlap = set(selected_ingredients).intersection(set(fda_candidates))
-                fda_unique = [ingr for ingr in fda_candidates if ingr not in selected_ingredients]
-                supplement_slots = min(3, len(fda_unique))
-                if supplement_slots > 0:
-                    db_keep = max(10 - supplement_slots, 0)
-                    merged_selected = selected_ingredients[:db_keep] + fda_unique[:supplement_slots]
-                    for token in selected_ingredients[db_keep:]:
-                        if token not in merged_selected:
-                            merged_selected.append(token)
-                    for token in fda_unique[supplement_slots:]:
-                        if token not in merged_selected:
-                            merged_selected.append(token)
-                    selected_ingredients = canonicalize_ingredient_list(merged_selected)[:10]
-                    logger.info(
-                        "Symptom candidate supplementation applied: overlap=%d supplemented=%d",
-                        len(overlap),
-                        supplement_slots,
-                    )
+                token
+                for token in selected_ingredients
+                if not _is_excluded_ingredient_for_symptom(db_symptom_term, token)
+            ]
+            if len(selected_ingredients) < 5 and fda_candidates:
+                for token in fda_candidates:
+                    if token in selected_ingredients:
+                        continue
+                    selected_ingredients.append(token)
+                    if len(selected_ingredients) >= 5:
+                        break
+            logger.info(
+                "Symptom direct ingredient selection via LLM: selected=%d from_candidates=%d",
+                len(selected_ingredients),
+                len(scored_candidates),
+            )
 
         if not selected_ingredients:
             logger.info(
@@ -556,11 +685,21 @@ async def retrieve_data_node(state: AgentState) -> AgentState:
                 )
 
             all_ingredients = canonicalize_ingredient_list(all_ingredients)
-            selected_ingredients = all_ingredients[:10]
+            all_ingredients = [
+                token
+                for token in all_ingredients
+                if not _is_excluded_ingredient_for_symptom(db_symptom_term, token)
+            ]
+            selected_ingredients = all_ingredients[:5]
         else:
             all_ingredients = canonicalize_ingredient_list(
                 [item["ingredient"] for item in scored_candidates] + list(fda_candidates)
             )
+            all_ingredients = [
+                token
+                for token in all_ingredients
+                if not _is_excluded_ingredient_for_symptom(db_symptom_term, token)
+            ]
 
         fda_ingredients = selected_ingredients[:5]
         backup_ingredients = selected_ingredients[5:10]
@@ -583,6 +722,7 @@ async def retrieve_data_node(state: AgentState) -> AgentState:
             "all_ingredient_candidates": all_ingredients,
             "ingredient_candidates": selected_ingredients,
             "backup_ingredient_candidates": backup_ingredients,
+            "ingredient_efficacy_map": ingredient_efficacy_map,
             "symptom_term": db_symptom_term,
             "fda_data": fda_ingredients,
             "user_profile": user_profile_data,
@@ -662,6 +802,8 @@ async def generate_symptom_answer_node(state: AgentState) -> AgentState:
 
     safe_ingredients = []
     blocked_ingredients = []
+    efficacy_map = state.get("ingredient_efficacy_map") or {}
+    symptom_term = str(state.get("symptom_term") or "").strip()
     for name in ordered_names:
         dur_item = dur_map.get(name, {})
         can_take, warning_types, reason = _evaluate_profile_risk_for_ingredient(
@@ -683,9 +825,15 @@ async def generate_symptom_answer_node(state: AgentState) -> AgentState:
                 reason = f"{risk_prefix} {reason}"
         elif not reason:
             reason = _fallback_reason(can_take, warning_types)
+        efficacy_brief = _summarize_efficacy_text(
+            ingredient_name=name,
+            efficacy_text=efficacy_map.get(name),
+            symptom_term=symptom_term,
+        )
         entry = {
             "name": name,
             "can_take": can_take,
+            "efficacy_brief": efficacy_brief,
             "reason": reason,
             "dur_warning_types": warning_types,
             "kr_durs": dur_item.get("kr_durs", []),

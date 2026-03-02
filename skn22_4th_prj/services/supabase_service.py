@@ -483,9 +483,11 @@ class SupabaseService:
             return tokens
 
         scores = {}
+        efficacy_by_ingredient = {}
         for row in rows:
             if not isinstance(row, dict):
                 continue
+            efficacy_text = re.sub(r"\s+", " ", str(row.get("efficacy") or "")).strip()
             for token in extract_ingredient_tokens(row.get("main_ingr_eng")):
                 if not re.search(r"[A-Za-z]", token):
                     continue
@@ -493,12 +495,21 @@ class SupabaseService:
                 if not normalized:
                     continue
                 scores[normalized] = scores.get(normalized, 0) + 1
+                if efficacy_text and normalized not in efficacy_by_ingredient:
+                    efficacy_by_ingredient[normalized] = efficacy_text
 
         if not scores:
             return []
 
         ranked = sorted(scores.items(), key=lambda x: (-x[1], x[0]))
-        return [{"ingredient": name, "score": score} for name, score in ranked]
+        return [
+            {
+                "ingredient": name,
+                "score": score,
+                "sample_efficacy": efficacy_by_ingredient.get(name, ""),
+            }
+            for name, score in ranked
+        ]
 
     @classmethod
     async def search_ingredients_by_symptom(
