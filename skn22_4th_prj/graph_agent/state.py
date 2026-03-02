@@ -17,6 +17,7 @@ class AgentState(TypedDict):
     all_ingredient_candidates: Optional[List[str]]
     ingredient_candidates: Optional[List[str]]
     backup_ingredient_candidates: Optional[List[str]]
+    ingredient_efficacy_map: Optional[dict]
     symptom_term: Optional[str]
     products_map: Optional[dict]
 
