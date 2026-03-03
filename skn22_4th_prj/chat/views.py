@@ -366,8 +366,12 @@ async def smart_search(request):
         if not fda:
             return render(
                 request,
-                "error.html",
-                {"message": final_answer or f"'{query}' 愿???뺣낫瑜?李얠쓣 ???놁뒿?덈떎."},
+                "general_result.html",
+                {
+                    "query": query,
+                    "answer": final_answer
+                    or f"Supabase에서 '{query}' 제품 정보를 찾지 못했습니다.",
+                },
             )
 
         return render(
@@ -376,6 +380,8 @@ async def smart_search(request):
             {
                 "drug_name": fda.get("brand_name", query),
                 "ingredients": fda.get("active_ingredients"),
+                "search_query": query,
+                "matched_query": result.get("keyword") or fda.get("brand_name", ""),
                 "us_guideline": fda,
                 "kr_dur": dur,
                 "dur_count": len(dur),
@@ -385,22 +391,12 @@ async def smart_search(request):
         )
 
     if category == "general_medical":
-        consultation_note = await _build_consultation_note(
-            symptom=query,
-            user_profile=result.get("user_profile") or {},
-            symptom_term=result.get("symptom_term") or "",
-            symptom_keyword=result.get("keyword") or "",
-        )
         return render(
             request,
-            "symptom_result.html",
+            "general_result.html",
             {
-                "symptom": query,
+                "query": query,
                 "answer": final_answer,
-                "dur_details": [],
-                "dur_summary": _build_dur_summary([]),
-                "maps_key": os.getenv("GOOGLE_MAPS_API_KEY"),
-                "consultation_note": consultation_note,
             },
         )
 

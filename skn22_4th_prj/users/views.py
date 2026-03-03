@@ -21,6 +21,7 @@ FOOD_KEYWORDS = [
     "계란",
     "밀",
     "콩",
+    '갑각류'
 ]
 
 
@@ -242,7 +243,7 @@ async def register_view(request):
 
             user, error = await SupabaseService.auth_sign_up(email, password)
             if user:
-                await SupabaseService.update_user_profile(
+                profile = await SupabaseService.update_user_profile(
                     user.id,
                     normalized["current_medications"],
                     normalized["allergies"],
@@ -253,6 +254,19 @@ async def register_view(request):
                     normalized["applied_chronic_diseases"],
                     normalized["food_allergy_detail"],
                 )
+                if not profile:
+                    # Prevent partially-created accounts (auth only, no profile).
+                    await SupabaseService.auth_delete_user(str(user.id))
+                    return JsonResponse(
+                        {
+                            "status": "error",
+                            "message": (
+                                "회원가입은 완료됐지만 프로필 저장에 실패했습니다. "
+                                "SUPABASE_SERVICE_ROLE_KEY 또는 user_profile RLS 정책을 확인해주세요."
+                            ),
+                        },
+                        status=500,
+                    )
                 return JsonResponse({"status": "success", "redirect": "/auth/login/"})
 
             if error == "exists":

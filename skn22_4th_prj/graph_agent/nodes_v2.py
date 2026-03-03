@@ -729,8 +729,25 @@ async def retrieve_data_node(state: AgentState) -> AgentState:
         }
 
     if category == "product_request":
-        target = keyword if keyword and keyword != "none" else query
-        fda_data = await DrugService.search_fda(target)
+        primary_target = keyword if keyword and keyword != "none" else query
+        normalized_target = await AIService.normalize_product_keyword(
+            query=query,
+            hint_keyword=primary_target,
+        )
+
+        candidates = []
+        seen = set()
+        for candidate in [primary_target, normalized_target, query]:
+            token = str(candidate or "").strip()
+            if not token:
+                continue
+            key = token.lower()
+            if key in seen:
+                continue
+            seen.add(key)
+            candidates.append(token)
+
+        fda_data = await SupabaseService.get_product_profile(candidates)
         return {
             "fda_data": fda_data,
             "user_profile": user_profile_data,
@@ -761,8 +778,10 @@ async def retrieve_dur_node(state: AgentState) -> AgentState:
         fda_data = state.get("fda_data")
         if not fda_data or not isinstance(fda_data, dict):
             return {"dur_data": []}
-        ingrs = fda_data.get("active_ingredients", "")
-        dur_data = await DrugService.get_dur_by_ingr(ingrs)
+        ingredient_list = fda_data.get("ingredient_list") or []
+        if not ingredient_list:
+            ingredient_list = fda_data.get("active_ingredients", "")
+        dur_data = await SupabaseService.get_product_dur_by_ingredients(ingredient_list)
         return {"dur_data": dur_data}
 
     return {"dur_data": []}
@@ -869,7 +888,9 @@ async def generate_product_answer_node(state: AgentState) -> AgentState:
     dur_data = state.get("dur_data") or []
 
     if not fda_data:
-        return {"final_answer": "해당 의약품 정보를 찾을 수 없습니다."}
+        fallback_query = str(state.get("query") or "").strip()
+        answer = await AIService.generate_web_search_answer(fallback_query)
+        return {"final_answer": answer}
 
     brand_name = fda_data.get("brand_name")
     indications = fda_data.get("indications")
