@@ -223,10 +223,8 @@ sequenceDiagram
 
 | 🌐 웹서비스 메인 화면 | 🗺️ 반경 내 약국 검색 |
 |:---:|:---:|
-| <img src="docs/images/demo_chat.png" alt="웹 메인 화면" width="400"/> | <img src="docs/images/demo_map.png" alt="구글맵 내 주변 약국" width="400"/> |
+| <img src="main.png" alt="웹 메인 화면" width="400"/> | <img src="map.png" alt="구글맵 내 주변 약국" width="400"/> |
 | **자연어 증상 입력 시 추천 약품 안내** | **내 위치 기반 반경 내 약국 시각화** |
-
-> 📌 **안내:** 위 스크린샷은 예시 이미지 경로(`docs/images/demo_chat.png` 등)로 되어 있습니다. 실제 프로젝트 진행 캡처본으로 파일 경로를 업데이트해주세요.
 
 ---
 
