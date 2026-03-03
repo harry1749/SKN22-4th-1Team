@@ -1,95 +1,186 @@
+import argparse
 import os
-import django
-import requests
 import time
 from datetime import datetime
 from urllib.parse import unquote
 
-import sys
+import requests
+from dotenv import load_dotenv
+from supabase import Client, create_client
 
-# 1. Django 환경 설정 (상위 디렉토리의 backend_django 추가)
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../backend_django')))
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'core.settings')
-django.setup()
 
-from drugs.models import DrugPermitInfo
-
-class DrugEnrichmentCollector:
+class DrugEnrichmentToSupabase:
     def __init__(self):
-        raw_key = os.getenv('KR_API_KEY')
+        load_dotenv()
+
+        raw_key = os.getenv("KR_API_KEY", "")
         self.service_key = unquote(raw_key) if raw_key else ""
         self.base_url = "https://apis.data.go.kr/1471000/DrugPrdtPrmsnInfoService07"
+        self.endpoint = "getDrugPrdtPrmsnDtlInq06"
 
-    def format_date(self, date_str):
-        if date_str and len(str(date_str)) >= 8:
-            try: return datetime.strptime(str(date_str)[:8], '%Y%m%d').date()
-            except: return None
-        return None
+        self.supabase_url = os.getenv("SUPABASE_URL", "")
+        self.supabase_service_role_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
+        self.supabase_key = self.supabase_service_role_key or os.getenv("SUPABASE_KEY", "")
+        self.table_name = "drug_permit_info"
 
-    def collect_all_basic_info(self, start_page=1, max_pages=None):
-        """데이터가 끝날 때까지 모든 제품 목록 수집 (max_pages로 제한 가능)"""
-        print(f"--- [START] 전수 데이터 수집 시작 (시작 페이지: {start_page}) ---")
+        if not self.service_key:
+            raise ValueError("KR_API_KEY is required")
+        if not self.supabase_url or not self.supabase_key:
+            raise ValueError(
+                "SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY (or SUPABASE_KEY) are required"
+            )
+
+        self.supabase: Client = create_client(self.supabase_url, self.supabase_key)
+
+    @staticmethod
+    def _format_date(date_str):
+        if not date_str:
+            return None
+        raw = str(date_str).strip()
+        if len(raw) < 8:
+            return None
+        try:
+            return datetime.strptime(raw[:8], "%Y%m%d").date().isoformat()
+        except ValueError:
+            return None
+
+    def _map_item(self, item: dict):
+        # Requested mapping: etc_otcc_name must come from ETC_OTC_CODE.
+        etc_otc_code = (item.get("ETC_OTC_CODE") or "").strip() or None
+
+        row = {
+            "item_seq": item.get("ITEM_SEQ"),
+            "item_name": item.get("ITEM_NAME"),
+            "item_eng_name": item.get("ITEM_ENG_NAME") or "",
+            "entp_name": item.get("ENTP_NAME"),
+            "etc_otcc_name": item.get("ETC_OTC_CODE"),
+            "main_ingr_eng": item.get("MAIN_INGR_ENG"),
+            "main_ingr_kor": item.get("MAIN_ITEM_INGR"),
+            "source_updated_at": self._format_date(item.get("ITEM_PERMIT_DATE")),
+        }
+        return row
+
+    def collect_and_upsert(
+        self,
+        start_page: int = 1,
+        max_pages: int = None,
+        num_of_rows: int = 100,
+        sleep_sec: float = 0.1,
+        max_failures_per_page: int = 2,
+    ):
+        print(f"--- [START] collect -> upsert ({self.table_name}) ---")
         page = start_page
-        
+        total_upserted = 0
+        total_missing_code = 0
+        fail_count = 0
+        max_failures_per_page = max(1, int(max_failures_per_page))
+
         while True:
-            # 최대 페이지 제한 확인
-            if max_pages and page >= start_page + max_pages:
-                print(f"   - 설정된 최대 수집 페이지({max_pages})에 도달하여 수집을 종료합니다.")
+            if max_pages is not None and page >= start_page + max_pages:
+                print(f"- reached max_pages={max_pages}, stop")
                 break
-                
+
             params = {
-                'serviceKey': self.service_key,
-                'pageNo': page,
-                'numOfRows': 100,
-                'type': 'json'
+                "serviceKey": self.service_key,
+                "pageNo": page,
+                "numOfRows": num_of_rows,
+                "type": "json",
             }
-            
+            url = f"{self.base_url}/{self.endpoint}"
+
             try:
-                # 1. 제품 허가 상세 목록 API 호출 (단일 API로 원료성분까지 수집)
-                url = f"{self.base_url}/getDrugPrdtPrmsnDtlInq06"
-                response = requests.get(url, params=params, timeout=20)
-                data = response.json()
-                
-                body = data.get('body', {})
-                items = body.get('items', [])
-                total_count = body.get('totalCount', 0)
-
-                if not items:
-                    print(f"   - {page}페이지: 데이터가 더 이상 없습니다. 수집을 종료합니다.")
-                    break
-
-                for item in items:
-                    # [데이터 매핑] 대문자 키 대응 (상세 API 스펙 반영)
-                    item_seq = item.get('ITEM_SEQ')
-                    DrugPermitInfo.objects.update_or_create(
-                        item_seq=item_seq,
-                        defaults={
-                            'item_name': item.get('ITEM_NAME'),
-                            'item_eng_name': item.get('ITEM_ENG_NAME', ''), # 영문명 없을 경우 빈 문자열
-                            'entp_name': item.get('ENTP_NAME'),
-                            'etc_otcc_name': item.get('MAKE_MATERIAL_FLAG'), # 전문/일반 구분
-                            'main_ingr_eng': item.get('MAIN_INGR_ENG'), # 사용자 요청: 주성분 영문명
-                            'main_ingr_kor': item.get('MAIN_ITEM_INGR'), # 사용자 요청: 원료성분 한글
-                            'source_updated_at': self.format_date(item.get('ITEM_PERMIT_DATE'))
-                        }
-                    )
-
-                print(f"   - {page}페이지 완료 (진행률: {round((page*100/total_count)*100, 2)}% / 전체 {total_count}건)")
-                page += 1
-                
-                # API 호출 속도 조절 (일일 쿼터 및 서버 부하 고려)
-                if page % 10 == 0:
-                    time.sleep(1) 
-                else:
-                    time.sleep(0.1)
-
+                res = requests.get(url, params=params, timeout=30)
+                res.raise_for_status()
+                payload = res.json()
             except Exception as e:
-                print(f"   ! {page}페이지 에러 발생: {e}")
-                time.sleep(5) # 에러 발생 시 잠시 대기 후 재시도
+                print(f"! page={page} request failed: {e}")
+                fail_count += 1
+                if fail_count >= max_failures_per_page:
+                    print(
+                        f"! page={page} fail_count={fail_count} reached limit={max_failures_per_page}, stop"
+                    )
+                    break
+                time.sleep(2)
                 continue
 
-        print("--- [FINISH] 모든 기본 정보 수집 완료 ---")
+            body = payload.get("body") or {}
+            total_count = body.get("totalCount")
+            items = body.get("items") or []
+            if isinstance(items, dict):
+                items = [items]
+
+            if not items:
+                print(f"- page={page}: no items, stop")
+                break
+
+            rows = []
+            missing_code_on_page = 0
+            for item in items:
+                row = self._map_item(item)
+                if not row.get("item_seq"):
+                    continue
+                if not row.get("etc_otcc_name"):
+                    missing_code_on_page += 1
+                rows.append(row)
+
+            if rows:
+                try:
+                    self.supabase.table(self.table_name).upsert(
+                        rows,
+                        on_conflict="item_seq",
+                    ).execute()
+                except Exception as e:
+                    print(f"! page={page} upsert failed: {e}")
+                    fail_count += 1
+                    if fail_count >= max_failures_per_page:
+                        print(
+                            f"! page={page} fail_count={fail_count} reached limit={max_failures_per_page}, stop"
+                        )
+                        break
+                    time.sleep(2)
+                    continue
+
+            fail_count = 0
+            total_upserted += len(rows)
+            total_missing_code += missing_code_on_page
+
+            progress = "?"
+            if isinstance(total_count, int) and total_count > 0:
+                progress = f"{min(page * num_of_rows, total_count)}/{total_count}"
+
+            print(
+                f"- page={page} upserted={len(rows)} missing_ETC_OTC_CODE={missing_code_on_page} progress={progress}"
+            )
+
+            if len(items) < num_of_rows:
+                break
+
+            page += 1
+            time.sleep(sleep_sec)
+
+        print(
+            f"--- [FINISH] total_upserted={total_upserted}, total_missing_ETC_OTC_CODE={total_missing_code} ---"
+        )
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Collect drug permit data from KR API and upsert directly to Supabase"
+    )
+    parser.add_argument("--start-page", type=int, default=1)
+    parser.add_argument("--max-pages", type=int, default=None)
+    parser.add_argument("--num-of-rows", type=int, default=100)
+    parser.add_argument("--sleep-sec", type=float, default=0.1)
+    args = parser.parse_args()
+
+    collector = DrugEnrichmentToSupabase()
+    collector.collect_and_upsert(
+        start_page=args.start_page,
+        max_pages=args.max_pages,
+        num_of_rows=args.num_of_rows,
+        sleep_sec=args.sleep_sec,
+    )
+
 
 if __name__ == "__main__":
-    collector = DrugEnrichmentCollector()
-    collector.collect_all_basic_info(start_page=1)
+    main()

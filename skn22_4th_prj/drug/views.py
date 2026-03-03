@@ -1,33 +1,79 @@
-import asyncio
 import logging
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from .models import UnifiedDrugInfo
-from django.db.models import Q
+import re
+from asgiref.sync import async_to_sync
+
+try:
+    from rest_framework.views import APIView
+    from rest_framework.response import Response
+except ModuleNotFoundError:
+    from django.http import JsonResponse
+    from django.views import View
+
+    class APIView(View):
+        pass
+
+    def Response(data, status=200):
+        return JsonResponse(data, status=status, safe=not isinstance(data, list))
+
 from services.supabase_service import SupabaseService
 from services.map_service import MapService
 from services.drug_service import DrugService
+from services.ingredient_utils import canonicalize_ingredient_name
 
 logger = logging.getLogger(__name__)
 
 
 class DrugSearchView(APIView):
-    async def get(self, request):
-        query = request.query_params.get("q", "").strip()
+    def get(self, request):
+        params = getattr(request, "query_params", request.GET)
+        query = params.get("q", "").strip()
         if not query:
             return Response([])
 
-        from services.supabase_service import SupabaseService
         # Supabase API를 통한 약품 검색
-        results = await SupabaseService.search_drugs(query)
+        results = async_to_sync(SupabaseService.search_drugs)(query)
 
         return Response(results)
 
 
 class UsRoadmapView(APIView):
-    async def get(self, request):
-        ingredients = request.query_params.getlist("ingredients")
-        kr_dosage_mg = float(request.query_params.get("kr_dosage_mg", 0.0))
+    @staticmethod
+    def _normalize_ingredients(raw_ingredients):
+        parsed = []
+        seen = set()
+        for raw in raw_ingredients or []:
+            if not raw:
+                continue
+            chunks = re.split(r",|/|;|\bAND\b|\bWITH\b|\+", str(raw), flags=re.IGNORECASE)
+            for chunk in chunks:
+                token = chunk.strip().upper()
+                if not token:
+                    continue
+                token = re.sub(r"\([^)]*\)", " ", token)
+                token = re.sub(
+                    r"\b\d+(?:\.\d+)?\s*(MG|MCG|G|ML|%)\b",
+                    " ",
+                    token,
+                    flags=re.IGNORECASE,
+                )
+                token = re.sub(r"[^A-Z0-9\s\-]", " ", token)
+                token = re.sub(r"\s+", " ", token).strip()
+                if not token:
+                    continue
+                token = canonicalize_ingredient_name(token)
+                if not token or token in seen:
+                    continue
+                seen.add(token)
+                parsed.append(token)
+        return parsed
+
+    def get(self, request):
+        return async_to_sync(self._get_async)(request)
+
+    async def _get_async(self, request):
+        params = getattr(request, "query_params", request.GET)
+        ingredients = self._normalize_ingredients(params.getlist("ingredients"))
+        kr_dosage_mg = float(params.get("kr_dosage_mg", 0.0))
 
         if not ingredients:
             return Response({"error": "ingredients are required"}, status=400)
@@ -41,11 +87,24 @@ class UsRoadmapView(APIView):
         try:
             cached_data = await SupabaseService.get_roadmap_cache(cache_key)
             if cached_data:
+                mapping_result = cached_data.get("mapping_result", {})
+                mapping_result = await MapService.ensure_mapping_result_summaries(
+                    mapping_result
+                )
+                cached_card = cached_data.get("pharmacist_card", {})
+                cached_dosage_form = "Tablet/Capsule"
+                if isinstance(cached_card, dict):
+                    cached_dosage_form = str(
+                        cached_card.get("desired_dosage_form") or cached_dosage_form
+                    )
+                pharmacist_card = MapService.generate_pharmacist_card(
+                    ingredients, cached_dosage_form
+                )
                 return Response(
                     {
                         "requested_ingredients": ingredients,
-                        "mapping_result": cached_data.get("mapping_result", {}),
-                        "pharmacist_card": cached_data.get("pharmacist_card", {}),
+                        "mapping_result": mapping_result,
+                        "pharmacist_card": pharmacist_card,
                         "dosage_warnings": cached_data.get("dosage_warnings", []),
                     }
                 )
@@ -54,6 +113,9 @@ class UsRoadmapView(APIView):
 
         try:
             mapping_result = await MapService.find_optimal_us_products(ingredients)
+            mapping_result = await MapService.ensure_mapping_result_summaries(
+                mapping_result
+            )
             pharmacist_card = MapService.generate_pharmacist_card(ingredients)
             dosage_warnings = []
 
@@ -89,14 +151,12 @@ class UsRoadmapView(APIView):
                                     }
                                 )
 
-            # Save to Cache
-            asyncio.create_task(
-                SupabaseService.set_roadmap_cache(
-                    query_text=cache_key,
-                    mapping_result=mapping_result,
-                    pharmacist_card=pharmacist_card,
-                    dosage_warnings=dosage_warnings,
-                )
+            # async_to_sync context may close the event loop immediately; save cache inline.
+            await SupabaseService.set_roadmap_cache(
+                query_text=cache_key,
+                mapping_result=mapping_result,
+                pharmacist_card=pharmacist_card,
+                dosage_warnings=dosage_warnings,
             )
 
             return Response(

@@ -1,0 +1,823 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>복용 안전성 기반 제품 안내 - {{ symptom }}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Noto+Sans+KR:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --ink-950: #08241f;
+        --ink-700: #335951;
+        --line: #d2e7df;
+        --safe-700: #156d45;
+        --safe-100: #e9f8ef;
+        --warn-700: #9a2e2e;
+        --warn-100: #fff4f4;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        min-height: 100vh;
+        font-family: "Sora", "Noto Sans KR", sans-serif;
+        color: var(--ink-950);
+        background:
+          radial-gradient(900px 420px at 108% -8%, #d9fff3 0%, transparent 62%),
+          radial-gradient(760px 360px at -8% 112%, #ffe5cc 0%, transparent 60%),
+          #f2faf7;
+      }
+
+      .wrap {
+        width: min(1140px, calc(100% - 2rem));
+        margin: 1rem auto 2rem;
+      }
+
+      .top-links {
+        display: flex;
+        gap: 0.6rem;
+        margin-bottom: 0.9rem;
+        flex-wrap: wrap;
+      }
+
+      .top-links a {
+        text-decoration: none;
+        color: #1a5449;
+        border: 1px solid #b7dbcf;
+        background: #f4fcf9;
+        border-radius: 999px;
+        font-weight: 700;
+        font-size: 0.83rem;
+        padding: 0.3rem 0.72rem;
+      }
+
+      .hero,
+      .card,
+      .blocked {
+        background: #fff;
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        box-shadow: 0 16px 36px rgba(4, 37, 32, 0.08);
+      }
+
+      .hero {
+        padding: 1.15rem 1.2rem;
+        margin-bottom: 1rem;
+      }
+
+      .hero h1 {
+        font-size: clamp(1.35rem, 3vw, 1.82rem);
+      }
+
+      .hero p {
+        margin-top: 0.4rem;
+        color: var(--ink-700);
+        font-size: 0.9rem;
+      }
+
+      .status {
+        margin-top: 0.62rem;
+        color: #1f5f53;
+        font-size: 0.84rem;
+        line-height: 1.5;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1.68fr) minmax(300px, 1fr);
+        gap: 1rem;
+        align-items: start;
+      }
+
+      .stack {
+        display: grid;
+        gap: 0.85rem;
+      }
+
+      .card {
+        padding: 0.92rem 0.98rem;
+      }
+
+      .hidden-card {
+        display: none;
+      }
+
+      .head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.6rem;
+      }
+
+      .name-wrap {
+        min-width: 0;
+      }
+
+      .name {
+        font-size: 1.05rem;
+        font-weight: 800;
+        letter-spacing: -0.01em;
+      }
+
+      .ingredient-efficacy {
+        margin-top: 0.2rem;
+        font-size: 0.78rem;
+        color: #4a6962;
+        line-height: 1.35;
+      }
+
+      .badge {
+        display: inline-flex;
+        border-radius: 999px;
+        padding: 0.2rem 0.55rem;
+        font-size: 0.73rem;
+        font-weight: 700;
+      }
+
+      .badge.recommend {
+        background: var(--safe-100);
+        color: var(--safe-700);
+      }
+
+      .badge.caution {
+        background: #fff3d9;
+        color: #8c5a00;
+      }
+
+      .slot {
+        margin-top: 0.7rem;
+      }
+
+      .group {
+        border: 1px solid #d6e9e2;
+        border-radius: 14px;
+        background: #fbfefd;
+        padding: 0.7rem;
+      }
+
+      .group h2 {
+        font-size: 0.96rem;
+      }
+
+      .group p {
+        margin-top: 0.2rem;
+        color: #43645d;
+        font-size: 0.82rem;
+      }
+
+      .section-title {
+        font-size: 0.78rem;
+        font-weight: 800;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: #2a5d52;
+        margin-bottom: 0.5rem;
+      }
+
+      .products {
+        list-style: none;
+        display: grid;
+        gap: 0.5rem;
+      }
+
+      .products li {
+        border: 1px solid #dbece6;
+        border-radius: 12px;
+        background: #f8fdfa;
+        padding: 0.6rem;
+      }
+
+      .product-main {
+        min-width: 0;
+      }
+
+      .product-title {
+        font-size: 0.88rem;
+        font-weight: 800;
+        color: #123f37;
+        text-decoration: none;
+        word-break: break-word;
+      }
+
+      .product-title:hover {
+        text-decoration: underline;
+      }
+
+      .meta {
+        margin-top: 0.19rem;
+        color: #49675f;
+        font-size: 0.8rem;
+        line-height: 1.42;
+      }
+
+      .meta-label {
+        color: #2e554d;
+        font-weight: 700;
+      }
+
+      .raw-en {
+        font-family: "Sora", sans-serif;
+        letter-spacing: 0.01em;
+        word-break: break-word;
+      }
+
+      .efficacy-summary {
+        margin-top: 0.25rem;
+        color: #365850;
+      }
+
+      .links {
+        margin-top: 0.27rem;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.38rem;
+      }
+
+      .links a {
+        text-decoration: none;
+        color: #1f5f53;
+        font-size: 0.74rem;
+        font-weight: 700;
+        border: 1px solid #bde3d7;
+        border-radius: 8px;
+        padding: 0.12rem 0.42rem;
+        background: #fff;
+      }
+
+      .links a:hover {
+        text-decoration: underline;
+      }
+
+      .rank {
+        margin-top: 0.23rem;
+        color: #7a4a00;
+        font-size: 0.75rem;
+        font-weight: 700;
+      }
+
+      .empty {
+        color: #4f6f67;
+        font-size: 0.9rem;
+      }
+
+      .blocked {
+        padding: 0.95rem 1rem;
+        position: sticky;
+        top: 1rem;
+      }
+
+      .blocked h2 {
+        font-size: 1rem;
+      }
+
+      .blocked ul {
+        margin-top: 0.62rem;
+        list-style: none;
+        display: grid;
+        gap: 0.45rem;
+      }
+
+      .blocked li {
+        border: 1px solid #ffd7d7;
+        background: var(--warn-100);
+        border-radius: 10px;
+        padding: 0.55rem;
+      }
+
+      .blocked strong {
+        color: var(--warn-700);
+      }
+
+      .excluded-products {
+        margin-top: 0.46rem;
+        border: 1px solid #ffd8d8;
+        background: #fff7f7;
+        border-radius: 9px;
+        padding: 0.45rem 0.52rem;
+      }
+
+      .excluded-products strong {
+        display: block;
+        font-size: 0.77rem;
+        color: #8f2323;
+      }
+
+      .excluded-products ul {
+        list-style: none;
+        margin-top: 0.3rem;
+        display: grid;
+        gap: 0.25rem;
+      }
+
+      .excluded-products li {
+        border: 0;
+        background: transparent;
+        padding: 0;
+        font-size: 0.78rem;
+        color: #7f2b2b;
+      }
+
+      .product-dur-note {
+        margin-top: 0.35rem;
+        border: 1px solid #ffd9d9;
+        background: #fff5f5;
+        border-radius: 8px;
+        padding: 0.3rem 0.45rem;
+        color: #8f2323;
+        font-size: 0.79rem;
+      }
+
+      .notice {
+        margin-top: 1rem;
+        background: #fff;
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        box-shadow: 0 16px 36px rgba(4, 37, 32, 0.08);
+        padding: 0.85rem 1rem;
+      }
+
+      .notice h3 {
+        font-size: 0.96rem;
+      }
+
+      .notice p {
+        margin-top: 0.35rem;
+        color: #3e5f58;
+        font-size: 0.85rem;
+        line-height: 1.5;
+      }
+
+      @media (max-width: 980px) {
+        .wrap {
+          width: min(1140px, calc(100% - 1rem));
+        }
+
+        .grid {
+          grid-template-columns: 1fr;
+        }
+
+        .blocked {
+          position: static;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="wrap">
+      <div class="top-links">
+        <a href="/smart-search/?q={{ symptom|urlencode }}">&larr; 성분 선정으로 돌아가기</a>
+        <a href="/">&larr; 메인으로</a>
+      </div>
+
+      <section class="hero">
+        <h1>복용 안전성 기반 제품 안내</h1>
+        <p>입력 증상: "{{ symptom }}"</p>
+        <p id="productsStatus" class="status">
+          복용 안전성/주의/금지 기준으로 분류해 제품 후보를 조회 중입니다. 제품이 확인된 성분 최대 5개를 자동으로 표시합니다.
+        </p>
+      </section>
+
+      <section class="grid">
+        <section class="stack">
+          <section class="group">
+            <h2>복용 안전성 성분</h2>
+            <p>DUR 금기/주의 근거가 상대적으로 적은 성분입니다.</p>
+            {% for ing in ingredients_data %}
+            {% if ing.can_take and not ing.dur_warning_types %}
+            <article
+              class="card"
+              data-ingredient="{{ ing.name }}"
+              data-candidate-order="{{ forloop.counter0 }}"
+              data-has-products="-1"
+              data-safety-level="recommend"
+            >
+              <div class="head">
+                <div class="name-wrap">
+                  <div class="name">{{ ing.name }}</div>
+                  <div class="ingredient-efficacy">{{ ing.efficacy_brief|default:"해당 증상 완화 목적 성분" }}</div>
+                </div>
+                <span class="badge recommend">복용 안전성</span>
+              </div>
+              <div class="slot" data-role="product-slot">
+                <p class="empty">제품 조회 중...</p>
+              </div>
+            </article>
+            {% endif %}
+            {% endfor %}
+          </section>
+
+          <section class="group">
+            <h2>주의 필요 성분</h2>
+            <p>복용은 가능하나 DUR 주의사항이 있어 전문가 확인이 필요한 성분입니다.</p>
+            {% for ing in ingredients_data %}
+            {% if ing.can_take and ing.dur_warning_types %}
+            <article
+              class="card"
+              data-ingredient="{{ ing.name }}"
+              data-candidate-order="{{ forloop.counter0 }}"
+              data-has-products="-1"
+              data-safety-level="caution"
+            >
+              <div class="head">
+                <div class="name-wrap">
+                  <div class="name">{{ ing.name }}</div>
+                  <div class="ingredient-efficacy">{{ ing.efficacy_brief|default:"해당 증상 완화 목적 성분" }}</div>
+                </div>
+                <span class="badge caution">주의 필요</span>
+              </div>
+              <div class="meta">{{ ing.reason }}</div>
+              <div class="slot" data-role="product-slot">
+                <p class="empty">제품 조회 중...</p>
+              </div>
+            </article>
+            {% endif %}
+            {% endfor %}
+          </section>
+        </section>
+
+        <section class="blocked">
+          <h2>복용 위험 성분 안내</h2>
+          <ul>
+            {% for ing in ingredients_data %}
+            {% if not ing.can_take %}
+            <li>
+              <strong>{{ ing.name }}</strong>
+              <div class="ingredient-efficacy">{{ ing.efficacy_brief|default:"해당 증상 완화 목적 성분" }}</div>
+              <div class="meta">{{ ing.reason }}</div>
+            </li>
+            {% endif %}
+            {% empty %}
+            <li class="empty">복용 제한 성분이 없습니다.</li>
+            {% endfor %}
+          </ul>
+        </section>
+      </section>
+
+      <section class="notice">
+        <h3>주의사항</h3>
+        <p>참고용으로만 사용하시기 바랍니다. 의학적인 자문이나 진단이 필요한 경우 전문가에게 문의하세요. AI 답변에 오류가 있을 수 있습니다.</p>
+      </section>
+    </main>
+
+    {{ ingredients_data|json_script:"ingredients-data-json" }}
+
+    <script>
+      function escapeHtml(value) {
+        return String(value || "")
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#39;");
+      }
+
+      function toEnglishRaw(value, fallback) {
+        const raw = String(value || "").trim();
+        if (raw) return raw;
+        return String(fallback || "");
+      }
+
+      function summarizeEfficacy(summaryKr, purpose) {
+        const source = String(summaryKr || purpose || "")
+          .replace(/\s+/g, " ")
+          .trim();
+        if (!source) {
+          return "효능 요약 정보를 불러오지 못했습니다. 복용 전 용법·용량과 주의사항을 확인하세요.";
+        }
+
+        const sentence = source.match(/^(.+?[.!?])(\s|$)/);
+        let brief = sentence ? sentence[1] : source;
+        brief = brief.replace(/^효능(\/효과)?[:\s]*/i, "").trim();
+
+        const maxLen = 96;
+        if (brief.length > maxLen) {
+          brief = `${brief.slice(0, maxLen - 1).trim()}...`;
+        }
+        return brief;
+      }
+
+      const TARGET_VISIBLE_PRODUCT_CARDS = 5;
+
+      function getIngredientCards() {
+        return Array.from(document.querySelectorAll(".card[data-ingredient]"));
+      }
+
+      function markCardProductState(ingredient, hasProducts) {
+        const ingUpper = String(ingredient || "").trim().toUpperCase();
+        const card = getIngredientCards().find(
+          (el) => String(el.dataset.ingredient || "").trim().toUpperCase() === ingUpper
+        );
+        if (!card) return;
+        card.dataset.hasProducts = hasProducts ? "1" : "0";
+      }
+
+      function setBackfillCardVisibility() {
+        const cards = getIngredientCards();
+        if (!cards.length) return;
+
+        const withProducts = cards.filter((card) => card.dataset.hasProducts === "1");
+        const pending = cards.filter((card) => card.dataset.hasProducts !== "1" && card.dataset.hasProducts !== "0");
+        const withoutProducts = cards.filter((card) => card.dataset.hasProducts === "0");
+        const ordered = [...withProducts, ...pending, ...withoutProducts];
+
+        ordered.forEach((card, idx) => {
+          card.classList.toggle("hidden-card", idx >= TARGET_VISIBLE_PRODUCT_CARDS);
+        });
+      }
+
+      function updateProductCard(ingredient, payloadItem) {
+        const cards = Array.from(document.querySelectorAll(".card[data-ingredient]"));
+        const card = cards.find((el) => (el.dataset.ingredient || "").toUpperCase() === ingredient.toUpperCase());
+        if (!card) return;
+        const slot = card.querySelector('[data-role="product-slot"]');
+        if (!slot) return;
+
+        const products = Array.isArray(payloadItem?.products) ? payloadItem.products : [];
+        const excludedProducts = Array.isArray(payloadItem?.excluded_products_due_to_other_component_dur)
+          ? payloadItem.excluded_products_due_to_other_component_dur
+          : [];
+        const ingredientNotice = escapeHtml(payloadItem?.other_component_dur_notice || "");
+        markCardProductState(ingredient, products.length > 0);
+
+        const excludedItemsHtml = excludedProducts
+          .map((x) => {
+            const brand = escapeHtml(x.brand_name || "Unknown Product");
+            const riskComponents = Array.isArray(x.risk_components) ? x.risk_components : [];
+            const reasonText =
+              riskComponents
+                .map((r) => {
+                  const n = escapeHtml(r.name || "");
+                  const t = Array.isArray(r.types) && r.types.length ? ` (${escapeHtml(r.types.join(", "))})` : "";
+                  return `${n}${t}`;
+                })
+                .filter(Boolean)
+                .join(", ") || escapeHtml(x.reason || "추가 주성분 DUR 위험");
+            return `<li><strong>${brand}</strong> - 제외 사유: ${reasonText}</li>`;
+          })
+          .join("");
+
+        if (!products.length) {
+          if (excludedProducts.length) {
+            slot.innerHTML = `
+              <p class="empty">복용 안전성 후보가 추가 주성분 DUR 위험으로 제외되었습니다.</p>
+              <div class="excluded-products">
+                <strong>제외된 제품 사유</strong>
+                <ul>${excludedItemsHtml}</ul>
+              </div>
+            `;
+            setBackfillCardVisibility();
+            return;
+          }
+          slot.innerHTML = "<p class=\"empty\">검색된 OTC 제품이 없습니다.</p>";
+          setBackfillCardVisibility();
+          return;
+        }
+
+        const items = products
+          .slice(0, 3)
+          .map((prod) => {
+            const brandRaw = toEnglishRaw(prod.brand_name, "Unknown Product");
+            const manufacturerRaw = toEnglishRaw(prod.manufacturer_name, "Unknown Manufacturer");
+            const brand = escapeHtml(brandRaw);
+            const manufacturer = escapeHtml(manufacturerRaw);
+            const amazonUrl = escapeHtml(prod.amazon_url || "");
+            const dailymedUrl = escapeHtml(prod.dailymed_url || "");
+            const rankLabel = escapeHtml(prod.amazon_rank_label || "");
+            const efficacySummary = escapeHtml(summarizeEfficacy(prod.summary_kr || "", prod.purpose || ""));
+
+            const titleUrl = amazonUrl || dailymedUrl;
+            const titleHtml = titleUrl
+              ? `<a class="product-title raw-en" href="${titleUrl}" target="_blank" rel="noopener noreferrer">${brand}</a>`
+              : `<span class="product-title raw-en">${brand}</span>`;
+            const links = [
+              amazonUrl ? `<a href="${amazonUrl}" target="_blank" rel="noopener noreferrer">아마존 상세</a>` : "",
+              dailymedUrl ? `<a href="${dailymedUrl}" target="_blank" rel="noopener noreferrer">DailyMed 정보</a>` : "",
+            ]
+              .filter(Boolean)
+              .join("");
+            const linksHtml = links ? `<p class="links">${links}</p>` : "";
+            const rankHtml = rankLabel ? `<p class="rank">Amazon BSR: ${rankLabel}</p>` : "";
+
+            return `
+              <li>
+                <div class="product-main">
+                  ${titleHtml}
+                  <p class="meta"><span class="meta-label">제조사(EN):</span> <span class="raw-en">${manufacturer}</span></p>
+                  ${linksHtml}
+                </div>
+                ${rankHtml}
+                <p class="meta efficacy-summary"><span class="meta-label">효능 요약:</span> ${efficacySummary}</p>
+              </li>
+            `;
+          })
+          .join("");
+
+        const noticeHtml = ingredientNotice ? `<p class="product-dur-note">${ingredientNotice}</p>` : "";
+        const excludedSection = excludedProducts.length
+          ? `<div class="excluded-products"><strong>추가 주성분 DUR 위험으로 제외된 제품 ${excludedProducts.length}개</strong><ul>${excludedItemsHtml}</ul></div>`
+          : "";
+
+        slot.innerHTML = `<h3 class="section-title">OTC 제품 후보</h3>${noticeHtml}<ul class="products">${items}</ul>${excludedSection}`;
+        setBackfillCardVisibility();
+      }
+
+      function buildProductPrefetchKey(symptom, ingredients) {
+        const normalizedSymptom = String(symptom || "").trim().toUpperCase();
+        const normalizedIngredients = (ingredients || [])
+          .map((x) => String(x || "").trim().toUpperCase())
+          .filter(Boolean)
+          .join(",");
+        return `symptom-products-prefetch::${normalizedSymptom}::${normalizedIngredients}`;
+      }
+
+      function loadPrefetchedItems(symptom, safeIngredients) {
+        const storageKey = buildProductPrefetchKey(symptom, safeIngredients);
+        try {
+          const raw = sessionStorage.getItem(storageKey);
+          if (!raw) return { items: [], fetchedIngredients: [], prefetchComplete: false };
+          const parsed = JSON.parse(raw);
+          const cachedAt = Number(parsed?.cached_at || 0);
+          const maxAgeMs = 5 * 60 * 1000;
+          if (!Array.isArray(parsed?.items) || cachedAt <= 0 || Date.now() - cachedAt > maxAgeMs) {
+            return { items: [], fetchedIngredients: [], prefetchComplete: false };
+          }
+          if (Number(parsed?.schema_version || 0) < 2) {
+            return { items: [], fetchedIngredients: [], prefetchComplete: false };
+          }
+          const fetchedIngredients = Array.isArray(parsed?.fetched_ingredients)
+            ? parsed.fetched_ingredients.map((x) => String(x || "").trim().toUpperCase()).filter(Boolean)
+            : [];
+          return {
+            items: parsed.items,
+            fetchedIngredients,
+            prefetchComplete: Boolean(parsed?.prefetch_complete),
+          };
+        } catch (_) {
+          return { items: [], fetchedIngredients: [], prefetchComplete: false };
+        }
+      }
+
+      function savePrefetchedItems(symptom, safeIngredients, itemMap, prefetchComplete) {
+        const storageKey = buildProductPrefetchKey(symptom, safeIngredients);
+        try {
+          const orderedItems = safeIngredients
+            .map((ingredient) => itemMap.get(ingredient))
+            .filter(Boolean);
+          const fetchedIngredients = orderedItems
+            .map((item) => String(item?.ingredient || "").trim().toUpperCase())
+            .filter(Boolean);
+
+          sessionStorage.setItem(
+            storageKey,
+            JSON.stringify({
+              schema_version: 2,
+              symptom,
+              ingredients: safeIngredients,
+              items: orderedItems,
+              fetched_ingredients: fetchedIngredients,
+              prefetch_complete: Boolean(prefetchComplete),
+              cached_at: Date.now(),
+            })
+          );
+          sessionStorage.setItem("symptom-products-prefetch-latest-key", storageKey);
+        } catch (_) {
+          // Ignore storage quota / serialization errors.
+        }
+      }
+
+      async function initProducts() {
+        const statusEl = document.getElementById("productsStatus");
+        const dataNode = document.getElementById("ingredients-data-json");
+        if (!dataNode) return;
+
+        let ingredientsData = [];
+        try {
+          ingredientsData = JSON.parse(dataNode.textContent || "[]");
+        } catch (_) {
+          ingredientsData = [];
+        }
+
+        const toCanTake = (value) => {
+          if (typeof value === "boolean") return value;
+          const token = String(value || "").trim().toLowerCase();
+          return ["true", "1", "yes", "y", "on"].includes(token);
+        };
+
+        const safeIngredients = ingredientsData
+          .filter((ing) => ing && ing.name && toCanTake(ing.can_take))
+          .map((ing) => String(ing.name).trim().toUpperCase());
+        setBackfillCardVisibility();
+
+        if (!safeIngredients.length) {
+          if (statusEl) statusEl.textContent = "제품 조회 가능한 성분이 없어 안내를 생략했습니다.";
+          return;
+        }
+
+        const symptomTerm = "{{ symptom|escapejs }}";
+        const safeIngredientSet = new Set(safeIngredients);
+        const renderedIngredients = new Set();
+        let successCount = 0;
+        const itemMap = new Map();
+
+        const prefetched = loadPrefetchedItems(symptomTerm, safeIngredients);
+        const prefetchedItems = Array.isArray(prefetched.items) ? prefetched.items : [];
+        const prefetchedIngredientSet = new Set(
+          Array.isArray(prefetched.fetchedIngredients) ? prefetched.fetchedIngredients : []
+        );
+
+        if (prefetchedItems.length) {
+          prefetchedItems.forEach((item) => {
+            const ingredient = String(item?.ingredient || "").trim().toUpperCase();
+            if (!ingredient || !safeIngredientSet.has(ingredient)) return;
+            updateProductCard(ingredient, item || {});
+            renderedIngredients.add(ingredient);
+            itemMap.set(ingredient, item || { ingredient, products: [] });
+            const count = Array.isArray(item?.products) ? item.products.length : 0;
+            if (count > 0) successCount += 1;
+          });
+
+          if (statusEl) {
+            statusEl.textContent = `미리 조회된 결과를 먼저 표시했습니다. (검토 대상 ${safeIngredients.length}개, 화면 최대 ${TARGET_VISIBLE_PRODUCT_CARDS}개)`;
+          }
+        }
+
+        const remainingIngredients = safeIngredients.filter((ingredient) => {
+          if (renderedIngredients.has(ingredient)) return false;
+          if (prefetched.prefetchComplete && prefetchedIngredientSet.has(ingredient)) return false;
+          return true;
+        });
+
+        if (!remainingIngredients.length) {
+          savePrefetchedItems(symptomTerm, safeIngredients, itemMap, true);
+          if (statusEl) {
+            statusEl.textContent = `검토 대상 ${safeIngredients.length}개 중 제품이 확인된 성분은 ${successCount}개이며, 화면에는 최대 ${TARGET_VISIBLE_PRODUCT_CARDS}개를 표시합니다.`;
+          }
+          return;
+        }
+
+        const firstBatchSize = 2;
+        const nextBatchSize = 3;
+        const batches = [];
+        batches.push(remainingIngredients.slice(0, firstBatchSize));
+        for (let i = firstBatchSize; i < remainingIngredients.length; i += nextBatchSize) {
+          batches.push(remainingIngredients.slice(i, i + nextBatchSize));
+        }
+
+        for (let batchIndex = 0; batchIndex < batches.length; batchIndex += 1) {
+          const batchIngredients = batches[batchIndex].filter(Boolean);
+          if (!batchIngredients.length) continue;
+          if (statusEl) {
+            statusEl.textContent = `제품 후보 ${batchIndex + 1}/${batches.length} 단계 조회 중입니다.`;
+          }
+
+          try {
+            const url = `/api/symptom-products/?ingredients=${encodeURIComponent(batchIngredients.join(","))}&symptom=${encodeURIComponent(symptomTerm)}`;
+            const res = await fetch(url, { headers: { "X-Requested-With": "XMLHttpRequest" } });
+            const payload = await res.json();
+            if (!res.ok || payload.status !== "success") {
+              throw new Error(payload.message || "Failed to load products");
+            }
+
+            const items = Array.isArray(payload.items) ? payload.items : [];
+            items.forEach((item) => {
+              const ingredient = String(item?.ingredient || "").toUpperCase();
+              if (!ingredient || !safeIngredientSet.has(ingredient)) return;
+              updateProductCard(ingredient, item || {});
+              renderedIngredients.add(ingredient);
+              itemMap.set(ingredient, item || { ingredient, products: [] });
+              const count = Array.isArray(item?.products) ? item.products.length : 0;
+              if (count > 0) successCount += 1;
+            });
+          } catch (_) {
+            batchIngredients.forEach((ingredient) => {
+              if (!safeIngredientSet.has(ingredient)) return;
+              const fallbackItem = { ingredient, products: [] };
+              updateProductCard(ingredient, fallbackItem);
+              renderedIngredients.add(ingredient);
+              itemMap.set(ingredient, fallbackItem);
+            });
+          }
+          savePrefetchedItems(symptomTerm, safeIngredients, itemMap, false);
+        }
+
+        savePrefetchedItems(symptomTerm, safeIngredients, itemMap, true);
+        if (statusEl) {
+          statusEl.textContent = `검토 대상 ${safeIngredients.length}개 중 제품이 확인된 성분은 ${successCount}개이며, 화면에는 최대 ${TARGET_VISIBLE_PRODUCT_CARDS}개를 표시합니다.`;
+        }
+      }
+
+      document.addEventListener("DOMContentLoaded", () => {
+        initProducts();
+      });
+    </script>
+  </body>
+</html>

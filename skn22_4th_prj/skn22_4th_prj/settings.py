@@ -1,5 +1,6 @@
 from pathlib import Path
 import os
+import importlib.util
 from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -22,6 +23,13 @@ DEBUG = True
 
 ALLOWED_HOSTS = ["*"]
 
+def _has_module(module_name: str) -> bool:
+    return importlib.util.find_spec(module_name) is not None
+
+
+HAS_DRF = _has_module("rest_framework")
+HAS_CORSHEADERS = _has_module("corsheaders")
+
 # Application definition
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -30,8 +38,14 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    "rest_framework",
-    "corsheaders",
+]
+
+if HAS_DRF:
+    INSTALLED_APPS.append("rest_framework")
+if HAS_CORSHEADERS:
+    INSTALLED_APPS.append("corsheaders")
+
+INSTALLED_APPS += [
     "drug",
     "users",
     "chat",
@@ -39,7 +53,12 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
-    "corsheaders.middleware.CorsMiddleware",
+]
+
+if HAS_CORSHEADERS:
+    MIDDLEWARE.append("corsheaders.middleware.CorsMiddleware")
+
+MIDDLEWARE += [
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",

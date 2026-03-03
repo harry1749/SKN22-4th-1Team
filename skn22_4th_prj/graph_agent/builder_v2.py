@@ -3,6 +3,8 @@ from .state import AgentState
 from .nodes_v2 import (
     classify_node,
     retrieve_data_node,
+    retrieve_fda_products_node,
+    retrieve_dur_node,
     generate_symptom_answer_node,
     generate_product_answer_node,
     generate_general_answer_node,
@@ -12,63 +14,86 @@ from .nodes_v2 import (
 
 def build_graph():
     """
-    Build and compile the LangGraph workflow V2 for drug information
-    (Optimized: merged FDA+DUR retrieval, parallel product fetch + AI answer)
+    Build and compile the LangGraph workflow V2 for drug information.
+
+    Symptom flow:
+    classify -> retrieve_data(DB ingredient search) -> retrieve_fda_products -> retrieve_dur -> answer_symptom
+
+    Product flow:
+    classify -> retrieve_data(product search) -> retrieve_dur -> answer_product
     """
     workflow = StateGraph(AgentState)
 
-    # Add Nodes
+    # Add nodes
     workflow.add_node("classify", classify_node)
-    workflow.add_node("retrieve_data", retrieve_data_node)  # Merged FDA + DUR
+    workflow.add_node("retrieve_data", retrieve_data_node)
+    workflow.add_node("retrieve_fda_products", retrieve_fda_products_node)
+    workflow.add_node("retrieve_dur", retrieve_dur_node)
     workflow.add_node("answer_symptom", generate_symptom_answer_node)
     workflow.add_node("answer_product", generate_product_answer_node)
     workflow.add_node("answer_general", generate_general_answer_node)
     workflow.add_node("answer_error", generate_error_node)
 
-    # Set Entry Point
+    # Entry point
     workflow.set_entry_point("classify")
 
-    # Define Routing Logic
+    # Route from classifier
     def route_query(state: AgentState):
-        # [V2 Cache] 캐시 적중 시 API 페치 우회
         if state.get("is_cached", False):
             return "cached_symptom"
 
         category = state["category"]
         if category == "symptom_recommendation":
-            return "indication"
-        elif category == "product_request":
+            return "symptom"
+        if category == "product_request":
             return "product"
-        elif category == "general_medical":
+        if category == "general_medical":
             return "general"
-        else:  # invalid, etc
-            return "error"
+        return "error"
 
-    # Add Conditional Edges from Classifier
     workflow.add_conditional_edges(
         "classify",
         route_query,
         {
             "cached_symptom": "answer_symptom",
-            "indication": "retrieve_data",
+            "symptom": "retrieve_data",
             "product": "retrieve_data",
             "general": "answer_general",
             "error": "answer_error",
         },
     )
 
-    # Route after data retrieval to appropriate answer generator
-    def route_answer_generation(state: AgentState):
+    # Route after initial retrieval
+    def route_after_retrieve_data(state: AgentState):
         category = state["category"]
         if category == "symptom_recommendation":
-            return "answer_symptom"
-        elif category == "product_request":
-            return "answer_product"
-        return "answer_error"  # Should not happen
+            return "symptom"
+        if category == "product_request":
+            return "product"
+        return "error"
 
     workflow.add_conditional_edges(
         "retrieve_data",
-        route_answer_generation,
+        route_after_retrieve_data,
+        {
+            "symptom": "retrieve_dur",
+            "product": "retrieve_dur",
+            "error": "answer_error",
+        },
+    )
+
+    # Final routing after DUR
+    def route_after_retrieve_dur(state: AgentState):
+        category = state["category"]
+        if category == "symptom_recommendation":
+            return "answer_symptom"
+        if category == "product_request":
+            return "answer_product"
+        return "answer_error"
+
+    workflow.add_conditional_edges(
+        "retrieve_dur",
+        route_after_retrieve_dur,
         {
             "answer_symptom": "answer_symptom",
             "answer_product": "answer_product",
