@@ -1,4 +1,4 @@
-import asyncio
+﻿import asyncio
 import logging
 import math
 import os
@@ -38,15 +38,18 @@ class MapService:
         "곤충교상": "insect bite",
     }
     _DEFAULT_KR_SUMMARY = (
-        "증상 완화를 위한 일반의약품으로 안내됩니다. "
-        "복용 전 용법·용량과 주의사항을 확인하세요."
+        "증상 완화를 위한 일반의약품으로 안내합니다. "
+        "복용 전 용법/용량과 주의사항을 확인하세요."
     )
     _BENEFIT_RULES = [
         ("진통", "통증 완화"),
+        ("통증", "통증 완화"),
         ("해열", "발열 완화"),
+        ("발열", "발열 완화"),
         ("소염", "염증 완화"),
+        ("염증", "염증 완화"),
         ("기침", "기침 완화"),
-        ("콧물", "콧물 완화"),
+        ("코막힘", "코막힘 완화"),
         ("비염", "비염 증상 완화"),
         ("알레르기", "알레르기 증상 완화"),
         ("속쓰림", "위산/속쓰림 완화"),
@@ -54,7 +57,6 @@ class MapService:
         ("복통", "복부 통증 완화"),
         ("설사", "설사 증상 완화"),
         ("감기", "감기 증상 완화"),
-        ("수면", "수면 보조"),
         ("pain", "통증 완화"),
         ("analgesic", "통증 완화"),
         ("fever", "발열 완화"),
@@ -883,7 +885,7 @@ class MapService:
 
                     return {
                         "match_type": "FULL_MATCH",
-                        "description": "요청한 모든 성분이 포함된 OTC 제품을 찾았습니다.",
+                        "description": "요청한 모든 성분을 포함한 OTC 제품을 찾았습니다.",
                         "recommendations": products,
                     }
             except Exception as e:
@@ -942,20 +944,18 @@ class MapService:
             "recommendations": component_recommendations,
             "cross_ingredient_recommendations": cross_ingredient_recommendations[:10],
         }
-
     @classmethod
     def generate_pharmacist_card(
         cls, ingredients: list, dosage_form: str = "Tablet/Capsule"
     ):
         ingr_str = ", ".join(ingredients)
-        card = {
-            "title": "약사 상담 카드",
+        return {
+            "title": "Pharmacist Consultation Card",
             "active_ingredients": ingredients,
             "desired_dosage_form": dosage_form,
             "english_guide": [
-                f"다음 성분이 포함된 OTC 제품을 찾고 있습니다: {ingr_str}",
-                f"가능하면 '{dosage_form}' 제형을 선호합니다.",
-                "재고 중 가장 가까운 제품을 추천해 주세요.",
+                f"I am looking for an OTC product that contains: {ingr_str}.",
+                f"If possible, I prefer this dosage form: {dosage_form}.",
+                "Please recommend the closest available options and check interactions or cautions.",
             ],
         }
-        return card

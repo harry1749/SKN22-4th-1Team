@@ -13,6 +13,23 @@ logger = logging.getLogger(__name__)
 class AIService:
     _client = None
 
+    @staticmethod
+    def _to_plain_text(text: str) -> str:
+        """Normalize LLM output into plain text for UI rendering."""
+        value = str(text or "")
+        if not value.strip():
+            return ""
+
+        value = re.sub(r"\[([^\]]+)\]\([^\)]+\)", r"\1", value)
+        value = re.sub(r"^\s*#{1,6}\s*", "", value, flags=re.MULTILINE)
+        value = re.sub(r"^\s*[-*+]\s+", "", value, flags=re.MULTILINE)
+        value = re.sub(r"^\s*\d+\.\s+", "", value, flags=re.MULTILINE)
+        value = re.sub(r"^\s*>\s?", "", value, flags=re.MULTILINE)
+        value = re.sub(r"(```|`)", "", value)
+        value = re.sub(r"(\*\*|__|\*|_|~~)", "", value)
+        value = re.sub(r"\n{3,}", "\n\n", value)
+        return value.strip()
+
     @classmethod
     def get_client(cls):
         if cls._client:
@@ -67,6 +84,68 @@ class AIService:
         if "keyword" not in data:
             data["keyword"] = query
         return data
+
+    @classmethod
+    async def normalize_product_keyword(cls, query: str, hint_keyword: str = "") -> str:
+        """
+        Normalize product-focused query into a single FDA-searchable term.
+        Returns English brand/generic when possible (e.g., Tylenol, acetaminophen).
+        """
+        fallback = str(hint_keyword or query or "").strip()
+        client = cls.get_client()
+        if not client:
+            return fallback
+
+        prompt = (
+            "You are an FDA OTC search term normalizer.\n"
+            "Given a user query and optional hint keyword, return ONE best searchable term.\n"
+            "Rules:\n"
+            "- Prefer a specific English brand name or generic ingredient used by FDA labels.\n"
+            "- If the user query already contains a valid product term, keep it.\n"
+            "- If no product can be identified, return 'none'.\n"
+            "Return JSON only."
+        )
+
+        payload = {
+            "query": str(query or "").strip(),
+            "hint_keyword": str(hint_keyword or "").strip(),
+        }
+
+        try:
+            res = await client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[
+                    {"role": "system", "content": prompt},
+                    {
+                        "role": "user",
+                        "content": json.dumps(payload, ensure_ascii=False),
+                    },
+                ],
+                temperature=0,
+                response_format={
+                    "type": "json_schema",
+                    "json_schema": {
+                        "name": "normalized_product_keyword",
+                        "strict": True,
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "product_term": {"type": "string"},
+                            },
+                            "required": ["product_term"],
+                            "additionalProperties": False,
+                        },
+                    },
+                },
+            )
+            data = json.loads(res.choices[0].message.content or "{}")
+            term = str((data or {}).get("product_term") or "").strip()
+            if not term or term.lower() == "none":
+                return fallback
+            return term
+        except Exception as e:
+            logger.warning(f"Error in normalize_product_keyword: {e}")
+            return fallback
 
     @classmethod
     async def canonicalize_symptom_term(cls, query: str, hint_keyword: str = "") -> str:
@@ -391,7 +470,92 @@ class AIService:
                 {"role": "user", "content": query}
             ]
         )
-        return res.choices[0].message.content
+        return cls._to_plain_text(res.choices[0].message.content)
+
+    @staticmethod
+    def _extract_responses_text(response) -> str:
+        """Best-effort extractor for Responses API text output."""
+        text = getattr(response, "output_text", None)
+        if isinstance(text, str) and text.strip():
+            return text.strip()
+
+        chunks = []
+        output = getattr(response, "output", None)
+        if isinstance(output, list):
+            for item in output:
+                content_list = getattr(item, "content", None)
+                if isinstance(content_list, list):
+                    for content in content_list:
+                        content_text = getattr(content, "text", None)
+                        if isinstance(content_text, str) and content_text.strip():
+                            chunks.append(content_text.strip())
+                        elif isinstance(content, dict):
+                            dict_text = content.get("text")
+                            if isinstance(dict_text, str) and dict_text.strip():
+                                chunks.append(dict_text.strip())
+                elif isinstance(item, dict):
+                    for content in item.get("content", []) or []:
+                        if not isinstance(content, dict):
+                            continue
+                        dict_text = content.get("text")
+                        if isinstance(dict_text, str) and dict_text.strip():
+                            chunks.append(dict_text.strip())
+        return "\n".join(chunks).strip()
+
+    @classmethod
+    async def generate_web_search_answer(cls, query: str):
+        """
+        Generate answer using OpenAI Responses API + web search tool.
+        Falls back to `generate_general_answer` when web tool/model is unavailable.
+        """
+        client = cls.get_client()
+        if not client:
+            return "OpenAI API 키가 설정되지 않았습니다."
+
+        web_system_prompt = (
+            "당신은 의약품 정보 안내 도우미입니다. "
+            "가능하면 최신 공개 웹 정보를 검색해 한국어로 간결하고 정확하게 답하세요. "
+            "의학적 진단/처방은 하지 말고, 안전수칙(복용량·상호작용·금기 확인 필요)을 포함하세요."
+        )
+        composed_input = (
+            f"{web_system_prompt}\n\n"
+            f"[사용자 질문]\n{str(query or '').strip()}"
+        )
+
+        model_candidates = [
+            os.getenv("OPENAI_WEB_SEARCH_MODEL", "gpt-4.1-mini"),
+            "gpt-4o-mini",
+        ]
+        # Some SDK/model combinations use `web_search_preview`, others `web_search`.
+        tool_candidates = [{"type": "web_search_preview"}, {"type": "web_search"}]
+
+        seen = set()
+        for model_name in model_candidates:
+            model_name = str(model_name or "").strip()
+            if not model_name or model_name in seen:
+                continue
+            seen.add(model_name)
+
+            for tool in tool_candidates:
+                try:
+                    response = await client.responses.create(
+                        model=model_name,
+                        tools=[tool],
+                        input=composed_input,
+                    )
+                    answer = cls._extract_responses_text(response)
+                    if answer:
+                        return cls._to_plain_text(answer)
+                except Exception as e:
+                    logger.warning(
+                        "web search answer failed (model=%s, tool=%s): %s",
+                        model_name,
+                        tool.get("type"),
+                        e,
+                    )
+
+        logger.warning("Falling back to non-web general answer for query: %s", query)
+        return await cls.generate_general_answer(query)
 
     @classmethod
     async def recommend_ingredients_for_symptom(cls, symptom: str):

@@ -1,9 +1,9 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="ko">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>{{ drug_name }} - 약물 분석 결과</title>
+    <title>{{ drug_name }} - 성분 분석 결과</title>
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -195,80 +195,27 @@
       }
       .product-links a:hover { text-decoration: underline; }
 
-      body.dur-gate-locked { overflow: hidden; }
-
-      .dur-gate-backdrop {
-        position: fixed;
-        inset: 0;
-        z-index: 1200;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 1rem;
-        background: rgba(4, 26, 22, 0.7);
-        backdrop-filter: blur(2px);
+      .bottom-notice {
+        margin-top: 1rem;
+        border: 1px solid #f0d6c1;
+        border-radius: 24px;
+        background: #fff8f2;
+        padding: 1rem 1.2rem;
       }
 
-      .dur-gate-modal {
-        width: min(760px, 100%);
-        max-height: calc(100vh - 2rem);
-        overflow: auto;
-        border-radius: 16px;
-        border: 2px solid #ffb9b9;
-        background: #fff;
-        box-shadow: 0 18px 42px rgba(3, 28, 24, 0.35);
-        padding: 1rem;
-      }
-
-      .dur-gate-title { color: #9f2121; font-size: 1rem; font-weight: 800; }
-      .dur-gate-desc { margin-top: 0.35rem; color: #6f2d2d; font-size: 0.86rem; line-height: 1.45; }
-
-      .dur-gate-list {
-        margin-top: 0.75rem;
-        max-height: 38vh;
-        overflow: auto;
-        border: 1px solid #ffd6d6;
-        border-radius: 12px;
-        background: #fff7f7;
-        padding: 0.7rem;
-        display: grid;
-        gap: 0.5rem;
-      }
-
-      .dur-gate-item {
-        border: 1px solid #ffe0e0;
-        border-radius: 10px;
-        background: #fff;
-        padding: 0.55rem;
-      }
-
-      .dur-gate-item p { margin-top: 0.28rem; color: #6f2d2d; font-size: 0.82rem; line-height: 1.45; }
-
-      .dur-gate-ack {
-        margin-top: 0.7rem;
-        display: flex;
-        align-items: center;
-        gap: 0.45rem;
-        font-size: 0.84rem;
-        color: #4f2a2a;
-        font-weight: 600;
-      }
-
-      .dur-gate-btn {
-        margin-top: 0.7rem;
-        width: 100%;
-        border: 0;
-        border-radius: 10px;
-        padding: 0.7rem 0.9rem;
-        font: inherit;
-        font-size: 0.9rem;
+      .bottom-notice h3 {
+        margin: 0 0 0.35rem 0;
+        color: #b05a12;
+        font-size: 1.05rem;
         font-weight: 800;
-        cursor: pointer;
-        color: #fff;
-        background: #b43232;
       }
 
-      .dur-gate-btn:disabled { cursor: not-allowed; background: #d8a4a4; }
+      .bottom-notice p {
+        margin: 0;
+        color: #8f4f18;
+        font-size: 1.02rem;
+        line-height: 1.55;
+      }
 
       @media (max-width: 900px) {
         .wrap { width: min(1120px, calc(100% - 1rem)); }
@@ -286,6 +233,12 @@
       <section class="hero">
         <h1>{{ drug_name }}</h1>
         <p>주요 성분: {{ ingredients }}</p>
+        {% if search_query %}
+        <p class="sub">
+          검색어: {{ search_query }}
+          {% if matched_query and matched_query != search_query %} (매칭: {{ matched_query }}){% endif %}
+        </p>
+        {% endif %}
       </section>
 
       {% if dur_count > 0 %}
@@ -300,7 +253,7 @@
           <h2 class="title">미국 FDA 가이드</h2>
           <div class="block"><h3>적응증</h3><p>{{ us_guideline.indications|default:"정보 없음" }}</p></div>
           <div class="block"><h3>경고</h3><p>{{ us_guideline.warnings|default:"정보 없음" }}</p></div>
-          <div class="block"><h3>용법·용량</h3><p>{{ us_guideline.dosage|default:"정보 없음" }}</p></div>
+          <div class="block"><h3>용법/용량</h3><p>{{ us_guideline.dosage|default:"정보 없음" }}</p></div>
         </article>
 
         <article class="panel {% if dur_count > 0 %}dur-panel{% endif %}">
@@ -324,7 +277,7 @@
           </div>
           {% endfor %}
           {% else %}
-          <p class="sub">현재 확인된 DUR 주의 항목이 없습니다.</p>
+          <p class="sub">현재 확인된 DUR 주의 항목은 없습니다.</p>
           {% endif %}
         </article>
       </section>
@@ -333,26 +286,11 @@
         <h2 class="title">US OTC 대체약 로드맵</h2>
         <div id="roadmap-container"><p class="roadmap-loading">데이터를 불러오는 중입니다...</p></div>
       </section>
+      <section class="bottom-notice">
+        <h3>주의사항</h3>
+        <p>참고용으로만 사용하시기 바랍니다. 의학적인 자문이나 진단이 필요한 경우 전문가에게 문의하세요. AI 답변에 오류가 있을 수 있습니다.</p>
+      </section>
     </main>
-
-    {% if dur_count > 0 %}
-    <section id="durGate" class="dur-gate-backdrop" aria-modal="true" role="dialog">
-      <div class="dur-gate-modal">
-        <h2 class="dur-gate-title">DUR 확인이 필요합니다</h2>
-        <p class="dur-gate-desc">아래 DUR 안내를 끝까지 확인한 뒤 체크해야 계속 진행할 수 있습니다.</p>
-        <div id="durGateList" class="dur-gate-list">
-          {% for dur in kr_dur %}
-          <article class="dur-gate-item">
-            <strong>{{ dur.type }} | {{ dur.ingr_name }}</strong>
-            <p>{{ dur.warning_msg }}</p>
-          </article>
-          {% endfor %}
-        </div>
-        <label class="dur-gate-ack"><input id="durGateCheck" type="checkbox" /> DUR 안내를 확인했습니다.</label>
-        <button id="durGateConfirm" class="dur-gate-btn" type="button" disabled>확인하고 결과 보기</button>
-      </div>
-    </section>
-    {% endif %}
 
     <script>
       function escapeHtml(value) {
@@ -436,8 +374,8 @@
           container.innerHTML += `
             <div class="dynamic-card">
               <h4>${escapeHtml(card.title || "Pharmacist Card")}</h4>
-              <p>약국에서 보여줄 수 있는 영문 가이드입니다.</p>
-              <p>${lines || "가이드 문구 없음"}</p>
+              <p>Use this English note when consulting a pharmacist.</p>
+              <p>${lines || "No guide text available."}</p>
             </div>
           `;
         }
@@ -513,38 +451,6 @@
           .catch((err) => setRoadmapError(`로드맵 조회 실패: ${err.message}`));
       }
 
-      function initDurGate() {
-        const gate = document.getElementById("durGate");
-        if (!gate) return;
-
-        const list = document.getElementById("durGateList");
-        const check = document.getElementById("durGateCheck");
-        const confirm = document.getElementById("durGateConfirm");
-        if (!list || !check || !confirm) return;
-
-        document.body.classList.add("dur-gate-locked");
-        let scrolledToEnd = list.scrollHeight <= list.clientHeight + 2;
-
-        function updateState() {
-          confirm.disabled = !(scrolledToEnd && check.checked);
-        }
-
-        list.addEventListener("scroll", () => {
-          if (list.scrollTop + list.clientHeight >= list.scrollHeight - 4) {
-            scrolledToEnd = true;
-          }
-          updateState();
-        });
-
-        check.addEventListener("change", updateState);
-        confirm.addEventListener("click", () => {
-          gate.remove();
-          document.body.classList.remove("dur-gate-locked");
-        });
-
-        updateState();
-      }
-
       window.toggleProducts = function (id) {
         const el = document.getElementById(id);
         if (!el) return;
@@ -552,9 +458,9 @@
       };
 
       document.addEventListener("DOMContentLoaded", () => {
-        initDurGate();
         fetchRoadmap();
       });
     </script>
   </body>
 </html>
+

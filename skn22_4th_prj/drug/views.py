@@ -91,11 +91,20 @@ class UsRoadmapView(APIView):
                 mapping_result = await MapService.ensure_mapping_result_summaries(
                     mapping_result
                 )
+                cached_card = cached_data.get("pharmacist_card", {})
+                cached_dosage_form = "Tablet/Capsule"
+                if isinstance(cached_card, dict):
+                    cached_dosage_form = str(
+                        cached_card.get("desired_dosage_form") or cached_dosage_form
+                    )
+                pharmacist_card = MapService.generate_pharmacist_card(
+                    ingredients, cached_dosage_form
+                )
                 return Response(
                     {
                         "requested_ingredients": ingredients,
                         "mapping_result": mapping_result,
-                        "pharmacist_card": cached_data.get("pharmacist_card", {}),
+                        "pharmacist_card": pharmacist_card,
                         "dosage_warnings": cached_data.get("dosage_warnings", []),
                     }
                 )

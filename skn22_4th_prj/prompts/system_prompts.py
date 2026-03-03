@@ -52,11 +52,15 @@ Analyze the user's question and determine the appropriate search strategy.
   * 상태 설명형 (e.g., 열이 난다, 모기에 물렸다, 눈이 말걱말걱하다)
   * 약이 필요한 모든 신체적 상태
 - "product_request": 특정 제품/성분명 확인 (e.g., Tylenol, acetaminophen)
+  * 특정 제품을 언급하고 효능/복용법/용량/주의/부작용/비교를 묻는 질문은
+    반드시 "product_request"로 분류합니다 ("general_medical" 아님).
 - "general_medical": 약과 증상이 없는 일반 의학 지식 질문 (e.g., 항생제 내성이란?)
 
 [Keyword Extraction Rules]
 1. Extract the most specific Korean medical term for symptom search.
-2. For drug names, preserve the exact English spelling.
+2. For drug names, preserve exact English spelling when already present.
+   If query uses localized/non-English product wording, convert keyword to the
+   closest FDA-searchable English brand or generic term.
 3. For Korean symptom words, normalize to Korean clinical terms (e.g., "머리 아파" -> "두통", "소화 안 돼" -> "소화불량", "편두통" -> "편두통").
 4. For situational/injury descriptions, extract the medical condition:
    - 다리가 까졌다/긁혔다 → "찰과상" 또는 "상처"

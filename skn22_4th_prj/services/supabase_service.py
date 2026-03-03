@@ -2,6 +2,7 @@ import os
 import re
 import logging
 import asyncio
+import json
 from supabase import create_client, Client
 
 from services.ai_service_v2 import AIService
@@ -12,6 +13,7 @@ logger = logging.getLogger(__name__)
 
 class SupabaseService:
     _client = None
+    _roadmap_cache_disabled = False
     _KCD_TABLE = "kcd_info"
     _KCD_CODE_COL = "kcd_code"
     _KCD_NAME_KOR_COL = "kcd_name_kor"
@@ -60,6 +62,35 @@ class SupabaseService:
             seen.add(key)
             unique_items.append(value)
         return unique_items
+
+    @staticmethod
+    def _parse_ingredient_tokens(text: str):
+        raw = str(text or "").upper()
+        if not raw:
+            return []
+        parts = re.split(r",|/|;|\bAND\b|\bWITH\b|\+|\n", raw, flags=re.IGNORECASE)
+        tokens = []
+        seen = set()
+        for part in parts:
+            token = str(part or "").strip()
+            if not token:
+                continue
+            token = re.sub(r"\([^)]*\)", " ", token)
+            token = re.sub(
+                r"\b\d+(?:\.\d+)?\s*(MG|MCG|G|ML|%)\b",
+                " ",
+                token,
+                flags=re.IGNORECASE,
+            )
+            token = re.sub(r"[^A-Z0-9\s\-]", " ", token)
+            token = re.sub(r"\s+", " ", token).strip()
+            token = canonicalize_ingredient_name(token)
+            token = str(token or "").strip().upper()
+            if len(token) < 2 or token in seen:
+                continue
+            seen.add(token)
+            tokens.append(token)
+        return tokens
 
     @staticmethod
     def _kcd_compact(text: str) -> str:
@@ -420,6 +451,114 @@ class SupabaseService:
             return False
 
     @classmethod
+    async def get_roadmap_cache(cls, query_text: str):
+        """
+        Load roadmap cache payload from search_cache.
+        Uses category='roadmap' and maps existing columns into roadmap fields.
+        """
+        if cls._roadmap_cache_disabled:
+            return None
+
+        client = cls.get_client()
+        if not client:
+            return None
+
+        try:
+            response = await cls._run_io(
+                lambda: (
+                    client.table("search_cache")
+                    .select("*")
+                    .eq("query_text", query_text)
+                    .eq("category", "roadmap")
+                    .limit(1)
+                    .execute()
+                )
+            )
+            row = (response.data or [None])[0]
+            if not row:
+                return None
+
+            raw_card = row.get("final_answer")
+            pharmacist_card = {}
+            if isinstance(raw_card, dict):
+                pharmacist_card = raw_card
+            elif isinstance(raw_card, str) and raw_card.strip():
+                try:
+                    parsed = json.loads(raw_card)
+                    if isinstance(parsed, dict):
+                        pharmacist_card = parsed
+                except Exception:
+                    pharmacist_card = {}
+
+            return {
+                "mapping_result": row.get("fda_data") or {},
+                "dosage_warnings": row.get("dur_data") or [],
+                "pharmacist_card": pharmacist_card,
+            }
+        except Exception as e:
+            if cls._is_kcd_source_missing_error(e):
+                if not cls._roadmap_cache_disabled:
+                    logger.warning(
+                        "[Cache] search_cache table is unavailable. "
+                        "Roadmap cache will be disabled."
+                    )
+                cls._roadmap_cache_disabled = True
+                return None
+            logger.warning(f"[Cache] Roadmap cache read failed for '{query_text}': {e}")
+            return None
+
+    @classmethod
+    async def set_roadmap_cache(
+        cls,
+        query_text: str,
+        mapping_result: dict,
+        pharmacist_card: dict,
+        dosage_warnings: list,
+    ):
+        """
+        Save roadmap cache payload into search_cache.
+        Never raises; returns bool.
+        """
+        if cls._roadmap_cache_disabled:
+            return False
+
+        client = cls.get_client()
+        if not client:
+            return False
+
+        try:
+            payload = {
+                "query_text": query_text,
+                "category": "roadmap",
+                "fda_data": mapping_result if isinstance(mapping_result, dict) else {},
+                "dur_data": dosage_warnings if isinstance(dosage_warnings, list) else [],
+                "final_answer": json.dumps(
+                    pharmacist_card if isinstance(pharmacist_card, dict) else {},
+                    ensure_ascii=False,
+                ),
+                "recommended_ingredients": [],
+            }
+            await cls._run_io(
+                lambda: (
+                    client.table("search_cache")
+                    .upsert(payload, on_conflict="query_text")
+                    .execute()
+                )
+            )
+            return True
+        except Exception as e:
+            if cls._is_kcd_source_missing_error(e):
+                if not cls._roadmap_cache_disabled:
+                    logger.warning(
+                        "[Cache] search_cache table is unavailable. "
+                        "Roadmap cache will be disabled."
+                    )
+                cls._roadmap_cache_disabled = True
+                return False
+            logger.warning(f"[Cache] Roadmap cache save failed for '{query_text}': {e}")
+            return False
+
+    @classmethod
     async def search_ingredient_scores_by_symptom(
         cls,
         keyword: str,
@@ -567,6 +706,181 @@ class SupabaseService:
         except Exception as e:
             logger.error(f"[Supabase] Drug search error: {e}")
             return []
+
+    @classmethod
+    async def get_product_profile(cls, query_terms):
+        """
+        Build product profile from Supabase tables.
+        Primary source: drug_permit_info
+        Supplemental efficacy/warnings/dosage: unified_drug_info
+        """
+        client = cls.get_client()
+        if not client:
+            return None
+
+        if isinstance(query_terms, str):
+            terms = [query_terms]
+        elif isinstance(query_terms, list):
+            terms = query_terms
+        else:
+            terms = []
+
+        candidates = cls._dedupe_ordered([str(x or "").strip() for x in terms])
+        if not candidates:
+            return None
+
+        async def _find_permit_row(term: str):
+            token = str(term or "").strip()
+            if not token:
+                return None
+            try:
+                # 1) exact name first
+                response = await cls._run_io(
+                    lambda: (
+                        client.table("drug_permit_info")
+                        .select("item_name, entp_name, main_ingr_eng, main_ingr_kor")
+                        .eq("item_name", token)
+                        .limit(1)
+                        .execute()
+                    )
+                )
+                rows = response.data or []
+                if rows:
+                    return rows[0]
+
+                # 2) fuzzy contains fallback
+                response = await cls._run_io(
+                    lambda: (
+                        client.table("drug_permit_info")
+                        .select("item_name, entp_name, main_ingr_eng, main_ingr_kor")
+                        .ilike("item_name", f"%{token}%")
+                        .limit(10)
+                        .execute()
+                    )
+                )
+                rows = response.data or []
+                if not rows:
+                    return None
+
+                token_l = token.lower()
+                rows.sort(
+                    key=lambda r: (
+                        0
+                        if str((r or {}).get("item_name") or "").strip().lower() == token_l
+                        else 1,
+                        len(str((r or {}).get("item_name") or "")),
+                    )
+                )
+                return rows[0]
+            except Exception as e:
+                logger.warning(f"[Supabase] product profile lookup failed for '{token}': {e}")
+                return None
+
+        permit_row = None
+        for term in candidates:
+            permit_row = await _find_permit_row(term)
+            if permit_row:
+                break
+        if not permit_row:
+            return None
+
+        item_name = str((permit_row or {}).get("item_name") or "").strip()
+        entp_name = str((permit_row or {}).get("entp_name") or "").strip()
+        permit_main_eng = str((permit_row or {}).get("main_ingr_eng") or "").strip()
+        permit_main_kor = str((permit_row or {}).get("main_ingr_kor") or "").strip()
+
+        unified_row = {}
+        if item_name:
+            try:
+                response = await cls._run_io(
+                    lambda: (
+                        client.table("unified_drug_info")
+                        .select(
+                            "efficacy, use_method, precautions, interaction, side_effects, main_ingr_eng, main_ingr_kor"
+                        )
+                        .eq("item_name", item_name)
+                        .limit(1)
+                        .execute()
+                    )
+                )
+                unified_row = (response.data or [{}])[0] or {}
+            except Exception as e:
+                logger.warning(
+                    f"[Supabase] unified_drug_info lookup failed for '{item_name}': {e}"
+                )
+
+        main_ingr_eng = (
+            permit_main_eng
+            or str(unified_row.get("main_ingr_eng") or "").strip()
+            or permit_main_kor
+            or str(unified_row.get("main_ingr_kor") or "").strip()
+        )
+        ingredient_list = cls._parse_ingredient_tokens(main_ingr_eng)
+
+        indications = str(unified_row.get("efficacy") or "").strip()
+        dosage = str(unified_row.get("use_method") or "").strip()
+
+        warning_candidates = [
+            str(unified_row.get("precautions") or "").strip(),
+            str(unified_row.get("interaction") or "").strip(),
+            str(unified_row.get("side_effects") or "").strip(),
+        ]
+        warnings = next((x for x in warning_candidates if x), "")
+
+        return {
+            "brand_name": item_name or (candidates[0] if candidates else ""),
+            "manufacturer_name": entp_name,
+            "active_ingredients": main_ingr_eng or "Ingredient Not Found",
+            "ingredient_list": ingredient_list,
+            "indications": indications or "정보 없음",
+            "warnings": warnings or "정보 없음",
+            "dosage": dosage or "정보 없음",
+            "source": "supabase",
+        }
+
+    @classmethod
+    async def get_product_dur_by_ingredients(cls, ingredients):
+        """
+        Return DUR items only for the given product ingredient list.
+        """
+        if isinstance(ingredients, str):
+            ingredient_list = cls._parse_ingredient_tokens(ingredients)
+        elif isinstance(ingredients, list):
+            ingredient_list = cls._dedupe_ordered(
+                [canonicalize_ingredient_name(x) for x in ingredients]
+            )
+            ingredient_list = [str(x or "").strip().upper() for x in ingredient_list if x]
+        else:
+            ingredient_list = []
+
+        if not ingredient_list:
+            return []
+
+        results = []
+        seen = set()
+        for ingredient in ingredient_list:
+            durs = await cls._get_kr_durs_supabase(ingredient)
+            for row in durs or []:
+                if not isinstance(row, dict):
+                    continue
+                type_name = str(row.get("type") or "").strip()
+                kor_name = str(row.get("kor_name") or ingredient).strip()
+                warning = str(row.get("warning") or "").strip()
+                if not type_name:
+                    continue
+                key = (ingredient.upper(), type_name, warning[:120])
+                if key in seen:
+                    continue
+                seen.add(key)
+                results.append(
+                    {
+                        "type": type_name,
+                        "ingr_name": kor_name,
+                        "warning_msg": warning,
+                        "severity": None,
+                    }
+                )
+        return results
 
     @classmethod
     async def resolve_valid_drug_names(cls, drug_names: list):
