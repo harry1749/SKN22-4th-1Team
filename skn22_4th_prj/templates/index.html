@@ -578,6 +578,121 @@
                     text-align: center;
                 }
             }
+
+            /* --- Disclaimer Modal Styles --- */
+            .modal-overlay {
+                position: fixed;
+                inset: 0;
+                background: rgba(7, 33, 29, 0.45);
+                backdrop-filter: blur(12px);
+                z-index: 9999;
+                display: grid;
+                place-items: center;
+                padding: 1.5rem;
+                animation: fadeIn 0.4s ease-out;
+            }
+
+            .modal-container {
+                background: var(--card);
+                width: min(820px, 100%);
+                max-height: 85vh;
+                border-radius: 28px;
+                border: 1px solid rgba(255, 255, 255, 0.7);
+                box-shadow: 0 40px 100px rgba(0, 0, 0, 0.25);
+                display: flex;
+                flex-direction: column;
+                overflow: hidden;
+                animation: modalPop 0.5s cubic-bezier(0.19, 1, 0.22, 1);
+            }
+
+            .modal-header {
+                padding: 1.8rem 2rem 1.2rem;
+                border-bottom: 1px solid var(--line);
+            }
+
+            .modal-header h2 {
+                font-size: 1.4rem;
+                color: #b25310;
+                display: flex;
+                align-items: center;
+                gap: 0.8rem;
+            }
+
+            .modal-body {
+                padding: 2rem;
+                overflow-y: auto;
+                color: var(--ink-700);
+                line-height: 1.7;
+            }
+
+            .modal-body section {
+                margin-bottom: 1.8rem;
+            }
+
+            .modal-body h3 {
+                color: var(--ink-900);
+                font-size: 1.05rem;
+                margin-bottom: 0.6rem;
+            }
+
+            .modal-body blockquote {
+                background: #fff8f0;
+                border-left: 4px solid #f5ccac;
+                padding: 1rem 1.2rem;
+                margin: 1rem 0;
+                border-radius: 4px 12px 12px 4px;
+                font-weight: 600;
+                color: #92400e;
+            }
+
+            .modal-footer {
+                padding: 1.5rem 2rem 2rem;
+                background: #f9fbfb;
+                border-top: 1px solid var(--line);
+                display: flex;
+                flex-direction: column;
+                gap: 1.2rem;
+            }
+
+            .check-wrap {
+                display: flex;
+                align-items: center;
+                gap: 0.7rem;
+                font-weight: 700;
+                cursor: pointer;
+            }
+
+            .check-wrap input {
+                width: 1.1rem;
+                height: 1.1rem;
+                accent-color: var(--brand-700);
+            }
+
+            .modal-actions {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 1rem;
+            }
+
+            @keyframes fadeIn {
+                from {
+                    opacity: 0;
+                }
+                to {
+                    opacity: 1;
+                }
+            }
+
+            @keyframes modalPop {
+                from {
+                    transform: scale(0.95) translateY(20px);
+                    opacity: 0;
+                }
+                to {
+                    transform: scale(1) translateY(0);
+                    opacity: 1;
+                }
+            }
         </style>
     </head>
 
@@ -763,6 +878,180 @@
                 </div>
                 <ul id="pharmacyList" class="pharmacy-list" hidden></ul>
             </section>
+        </div>
+
+        <!-- Disclaimer Modal -->
+        <div id="disclaimerModal" class="modal-overlay" style="display: none">
+            <div class="modal-container">
+                <header class="modal-header">
+                    <h2>⚠️ 면책사항 동의</h2>
+                </header>
+                <div class="modal-body">
+                    <h1
+                        style="
+                            font-size: 1.6rem;
+                            margin-bottom: 1.2rem;
+                            text-align: center;
+                        "
+                    >
+                        <b>서비스 이용 약관 및 법적 면책 고지</b>
+                    </h1>
+
+                    <h3 style="margin-bottom: 0.6rem">
+                        본 서비스는 OpenFDA 공공데이터를 기반으로 정보를
+                        제공하는 데이터 검색 보조 도구입니다.
+                    </h3>
+                    <h3 style="margin-bottom: 1.2rem">
+                        사용자는 본 서비스를 이용함과 동시에 아래의 모든 사항에
+                        <b>동의</b>한 것으로 간주됩니다.
+                    </h3>
+
+                    <hr
+                        style="
+                            margin: 1.5rem 0;
+                            border: none;
+                            border-top: 1px solid var(--line);
+                        "
+                    />
+
+                    <section>
+                        <h2 style="font-size: 1.3rem; margin-bottom: 0.8rem">
+                            <b>1. 의료 행위의 부인</b>
+                        </h2>
+                        <h3 style="margin-bottom: 0.6rem">
+                            본 시스템이 제공하는 모든 정보는 일반적인 정보
+                            제공만을 목적으로 하며, 의학적 진단, 치료, 처방 또는
+                            복약 지도를 대신할 수 없습니다.
+                        </h3>
+                        <blockquote>
+                            <b
+                                >AI가 생성한 답변을 근거로 스스로 질병을
+                                진단하거나 약물을 선택하여 복용하지 마십시오.
+                                이는 오남용으로 인한 심각한 부작용을 초래할 수
+                                있습니다.</b
+                            >
+                        </blockquote>
+                    </section>
+
+                    <section>
+                        <h2 style="font-size: 1.3rem; margin-bottom: 0.8rem">
+                            <b>2. 정보의 정확성 및 최신성 보장 불가</b>
+                        </h2>
+                        <h3 style="margin-bottom: 0.6rem">
+                            본 서비스는 생성형 AI(RAG) 기술을 사용합니다.
+                        </h3>
+                        <h3 style="margin-bottom: 0.8rem">
+                            AI의 특성상 환각 현상(Hallucination)이 발생할 수
+                            있으며, OpenFDA 데이터의 내용과 다른 부정확하거나
+                            왜곡된 정보를 제공할 가능성이 항상 존재합니다.
+                        </h3>
+                        <blockquote>
+                            데이터베이스 업데이트 지연으로 인해 최신 의약품
+                            정보나 허가 취소 사항이 반영되지 않았을 수 있습니다.
+                        </blockquote>
+                        <blockquote>
+                            정보의 최종 확인은 반드시 공식적인 FDA
+                            웹사이트(fda.gov) 또는 전문가를 통해 확인하시기
+                            바랍니다.
+                        </blockquote>
+                    </section>
+
+                    <section>
+                        <h2 style="font-size: 1.3rem; margin-bottom: 0.8rem">
+                            <b>3. 책임의 제한</b>
+                        </h2>
+                        <h3 style="margin-bottom: 0.8rem">
+                            서비스 운영 주체는 본 서비스가 제공한 정보의 오류,
+                            누락, 지연으로 인해 발생하는 어떠한 형태의
+                            직접적·간접적·결과적 손해(신체적 부상, 질환의 악화,
+                            경제적 손실 등)에 대해서도 법적 책임을 지지
+                            않습니다.
+                        </h3>
+                        <blockquote>
+                            <b
+                                >사용자가 본 시스템의 정보를 신뢰하여 행한 모든
+                                결정 및 행동에 대한 책임은 전적으로 사용자
+                                본인에게 있습니다.</b
+                            >
+                        </blockquote>
+                    </section>
+
+                    <section>
+                        <h2 style="font-size: 1.3rem; margin-bottom: 0.8rem">
+                            <b>4. 전문가 상담 필수</b>
+                        </h2>
+                        <h3 style="margin-bottom: 0.6rem">
+                            증상이 있거나 의약품 성분에 대해 궁금한 점이 있을
+                            경우, 반드시 전문의 또는 약사와 상담하십시오.
+                        </h3>
+                        <h3 style="margin-bottom: 0.8rem">
+                            응급 상황이 발생한 경우, 본 시스템에 의존하지 말고
+                            즉시 응급 의료 기관(911 등)에 연락하십시오.
+                        </h3>
+                    </section>
+
+                    <section>
+                        <h2 style="font-size: 1.3rem; margin-bottom: 0.8rem">
+                            <b>5. 데이터 출처 및 오용 금지</b>
+                        </h2>
+                        <h3 style="margin-bottom: 0.8rem">
+                            본 서비스는 OpenFDA의 공공데이터를 인용하나, FDA가
+                            본 서비스의 운영이나 결과물을 보증하는 것은
+                            아닙니다.
+                        </h3>
+                        <blockquote>
+                            사용자는 본 서비스의 결과를 상업적으로 이용하거나,
+                            타인에게 의학적 권고로 전달하여 발생하는 모든 법적
+                            문제에 대해 단독으로 책임을 집니다.
+                        </blockquote>
+                    </section>
+
+                    <hr
+                        style="
+                            margin: 1.5rem 0;
+                            border: none;
+                            border-top: 1px solid var(--line);
+                        "
+                    />
+
+                    <section>
+                        <h2 style="font-size: 1.3rem; margin-bottom: 0.8rem">
+                            <b>6. 확인 및 동의</b>
+                        </h2>
+                        <p style="margin-bottom: 0.6rem">
+                            본인은 위 면책 고지 사항을 충분히 숙지하였으며, 본
+                            서비스가 제공하는 정보는 참고용일 뿐 의료 전문가의
+                            조언을 대체할 수 없음에 동의합니다.
+                        </p>
+                        <p>
+                            또한, 이를 어기고 발생한 모든 결과에 대해 서비스
+                            제공자에게 책임을 묻지 않을 것을 서약합니다.
+                        </p>
+                    </section>
+                </div>
+                <footer class="modal-footer">
+                    <label class="check-wrap">
+                        <input type="checkbox" id="disclaimerCheck" />
+                        <span>내용을 꼼꼼히 확인 했습니다.</span>
+                    </label>
+                    <div class="modal-actions">
+                        <button
+                            id="disclaimerAgreeBtn"
+                            class="btn btn-primary"
+                            disabled
+                        >
+                            ✅ 동의합니다
+                        </button>
+                        <button
+                            id="disclaimerRejectBtn"
+                            class="btn btn-outline"
+                            style="background: #eee"
+                        >
+                            ❌ 거부합니다
+                        </button>
+                    </div>
+                </footer>
+            </div>
         </div>
 
         <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -1244,6 +1533,38 @@
                     requestNearbyPharmacies,
                 );
             }
+
+            /* --- Disclaimer Modal Logic --- */
+            document.addEventListener("DOMContentLoaded", function () {
+                const modal = document.getElementById("disclaimerModal");
+                const checkbox = document.getElementById("disclaimerCheck");
+                const agreeBtn = document.getElementById("disclaimerAgreeBtn");
+                const rejectBtn = document.getElementById(
+                    "disclaimerRejectBtn",
+                );
+
+                if (!modal || !checkbox || !agreeBtn || !rejectBtn) return;
+
+                // Check if already accepted (changed to sessionStorage to match app session)
+                if (!sessionStorage.getItem("disclaimerAccepted")) {
+                    modal.style.display = "grid";
+                    document.body.style.overflow = "hidden"; // Prevent background scroll
+                }
+
+                checkbox.addEventListener("change", function () {
+                    agreeBtn.disabled = !this.checked;
+                });
+
+                agreeBtn.addEventListener("click", function () {
+                    sessionStorage.setItem("disclaimerAccepted", "true");
+                    modal.style.display = "none";
+                    document.body.style.overflow = "";
+                });
+
+                rejectBtn.addEventListener("click", function () {
+                    alert("거부할 경우 서비스 이용이 불가합니다.");
+                });
+            });
         </script>
     </body>
 </html>
