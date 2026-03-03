@@ -1,1311 +1,1569 @@
 <!doctype html>
 <html lang="ko">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>회원정보 관리 - GDSI</title>
-
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Noto+Sans+KR:wght@400;500;700&display=swap"
-      rel="stylesheet"
-    />
-
-    <style>
-      :root {
-        --ink-950: #0b1916;
-        --ink-800: #19312c;
-        --ink-600: #3a5b53;
-        --line: #cfe1db;
-        --line-strong: #9cc4b8;
-        --brand-800: #00584b;
-        --brand-700: #007a67;
-        --brand-600: #00a383;
-        --accent: #f3b44d;
-        --card: rgba(255, 255, 255, 0.78);
-      }
-
-      * {
-        box-sizing: border-box;
-      }
-
-      html,
-      body {
-        min-height: 100%;
-      }
-
-      body {
-        margin: 0;
-        font-family: "Sora", "Noto Sans KR", sans-serif;
-        color: var(--ink-950);
-        background:
-          radial-gradient(48rem 34rem at 105% -5%, rgba(0, 163, 131, 0.18) 0%, rgba(0, 163, 131, 0) 64%),
-          radial-gradient(40rem 24rem at -10% 100%, rgba(243, 180, 77, 0.22) 0%, rgba(243, 180, 77, 0) 62%),
-          linear-gradient(155deg, #f7fffc 0%, #f2f7ff 100%);
-        padding: 1.1rem;
-      }
-
-      .wrap {
-        width: min(960px, 100%);
-        margin: 1.1rem auto;
-        display: grid;
-        gap: 1.1rem;
-      }
-
-      .card {
-        position: relative;
-        overflow: hidden;
-        background: var(--card);
-        border: 1px solid rgba(255, 255, 255, 0.78);
-        border-radius: 26px;
-        box-shadow:
-          0 14px 34px rgba(8, 44, 38, 0.12),
-          0 4px 14px rgba(8, 44, 38, 0.06);
-        backdrop-filter: blur(10px);
-        padding: 1.25rem;
-        animation: card-rise 0.44s ease both;
-      }
-
-      .card::after {
-        content: "";
-        position: absolute;
-        inset: 0;
-        border-radius: inherit;
-        border: 1px solid rgba(255, 255, 255, 0.45);
-        pointer-events: none;
-      }
-
-      .card:nth-child(2) {
-        animation-delay: 0.06s;
-      }
-
-      .card:nth-child(3) {
-        animation-delay: 0.12s;
-      }
-
-      .card:nth-child(4) {
-        animation-delay: 0.18s;
-      }
-
-      .card:nth-child(5) {
-        animation-delay: 0.24s;
-      }
-
-      @keyframes card-rise {
-        from {
-          opacity: 0;
-          transform: translateY(10px);
-        }
-        to {
-          opacity: 1;
-          transform: translateY(0);
-        }
-      }
-
-      .head {
-        display: flex;
-        justify-content: space-between;
-        gap: 0.6rem;
-        align-items: center;
-        margin-bottom: 1rem;
-      }
-
-      .head h1,
-      .head h2 {
-        margin: 0;
-        letter-spacing: -0.024em;
-      }
-
-      .head h1 {
-        font-size: 1.58rem;
-      }
-
-      .head h2 {
-        font-size: 1.08rem;
-      }
-
-      .user-email {
-        display: inline-flex;
-        align-items: center;
-        padding: 0.36rem 0.68rem;
-        border-radius: 999px;
-        border: 1px solid #c6ddd4;
-        background: rgba(255, 255, 255, 0.74);
-        color: var(--ink-800);
-        font-size: 0.82rem;
-      }
-
-      .error,
-      .message {
-        border-radius: 14px;
-        padding: 0.78rem 0.84rem;
-        font-size: 0.86rem;
-        border-left-width: 4px;
-        border-left-style: solid;
-      }
-
-      .error {
-        background: #fff3f0;
-        color: #b23f2b;
-        border: 1px solid #ffd4cb;
-        border-left-color: #f26b52;
-      }
-
-      .message {
-        background: #edfcf5;
-        color: #1e6b4f;
-        border: 1px solid #bdebd6;
-        border-left-color: #17a26c;
-      }
-
-      .grid {
-        display: grid;
-        gap: 0.9rem;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-      }
-
-      .full {
-        grid-column: 1 / -1;
-      }
-
-      .field label,
-      .check label {
-        display: block;
-        font-size: 0.8rem;
-        font-weight: 700;
-        margin-bottom: 0.42rem;
-        letter-spacing: 0.01em;
-      }
-
-      input[type="text"],
-      input[type="password"] {
-        width: 100%;
-        border: 1px solid var(--line);
-        border-radius: 14px;
-        padding: 0.84rem 0.92rem;
-        font: inherit;
-        outline: none;
-        background: rgba(255, 255, 255, 0.9);
-        transition:
-          border-color 0.18s ease,
-          box-shadow 0.18s ease,
-          transform 0.18s ease;
-      }
-
-      input[type="text"]::placeholder,
-      input[type="password"]::placeholder {
-        color: #6f8e85;
-      }
-
-      input:focus {
-        border-color: #58c6ab;
-        box-shadow: 0 0 0 4px rgba(0, 163, 131, 0.14);
-        transform: translateY(-1px);
-      }
-
-      .check {
-        border: 1px solid #d9e8e3;
-        border-radius: 16px;
-        background:
-          radial-gradient(90% 220% at 110% -80%, rgba(0, 163, 131, 0.11) 0%, rgba(0, 163, 131, 0) 46%),
-          #f9fdfb;
-        padding: 0.84rem;
-      }
-
-      .check .inline {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.5rem;
-        margin: 0;
-      }
-
-      .check input[type="checkbox"] {
-        width: 18px;
-        height: 18px;
-        accent-color: var(--brand-600);
-      }
-
-      .hidden-input {
-        display: none;
-        margin-top: 0.6rem;
-      }
-
-      .med-input-row {
-        display: flex;
-        gap: 0.5rem;
-        align-items: stretch;
-      }
-
-      .autocomplete-wrapper {
-        position: relative;
-        flex: 1;
-      }
-
-      .autocomplete-dropdown {
-        display: none;
-        position: absolute;
-        left: 0;
-        right: 0;
-        top: calc(100% + 6px);
-        z-index: 50;
-        max-height: 220px;
-        overflow-y: auto;
-        background: rgba(255, 255, 255, 0.98);
-        border: 1px solid #cae0d8;
-        border-radius: 13px;
-        box-shadow: 0 18px 30px rgba(8, 44, 38, 0.16);
-      }
-
-      .autocomplete-dropdown.show {
-        display: block;
-      }
-
-      .autocomplete-item {
-        display: flex;
-        justify-content: space-between;
-        gap: 0.5rem;
-        padding: 0.68rem 0.82rem;
-        font-size: 0.86rem;
-        cursor: pointer;
-        transition: background 0.15s ease;
-      }
-
-      .autocomplete-item:hover,
-      .autocomplete-item.active {
-        background: #f0fbf7;
-      }
-
-      .autocomplete-item .name {
-        font-weight: 700;
-      }
-
-      .autocomplete-item .maker {
-        color: #4f6f67;
-        font-size: 0.78rem;
-      }
-
-      .autocomplete-empty {
-        padding: 0.78rem;
-        text-align: center;
-        color: #5a7770;
-        font-size: 0.8rem;
-      }
-
-      .btn-add {
-        border: 1px solid #b2d7cb;
-        border-radius: 13px;
-        background: linear-gradient(180deg, #f5fffb 0%, #ecfaf4 100%);
-        color: #25584d;
-        padding: 0 1rem;
-        font-weight: 700;
-        cursor: pointer;
-        transition:
-          transform 0.15s ease,
-          box-shadow 0.15s ease;
-      }
-
-      .btn-add:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 8px 18px rgba(0, 122, 103, 0.16);
-      }
-
-      .btn-add:disabled {
-        opacity: 0.48;
-        cursor: not-allowed;
-        box-shadow: none;
-        transform: none;
-      }
-
-      .tags {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.42rem;
-        margin-top: 0.52rem;
-      }
-
-      .tag {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.3rem;
-        border: 1px solid #bbdcd1;
-        border-radius: 999px;
-        background: #f3fcf8;
-        color: #255c50;
-        padding: 0.28rem 0.66rem;
-        font-size: 0.79rem;
-      }
-
-      .tag-invalid {
-        border-color: #f4b5ab;
-        background: #fff2f0;
-        color: #9c3424;
-      }
-
-      .tag button {
-        border: 0;
-        background: transparent;
-        color: #497167;
-        font-size: 1rem;
-        cursor: pointer;
-        line-height: 1;
-      }
-
-      .hint {
-        margin-top: 0.44rem;
-        font-size: 0.78rem;
-        color: #466960;
-      }
-
-      .actions {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.68rem;
-        margin-top: 1rem;
-      }
-
-      .btn {
-        border: 0;
-        border-radius: 14px;
-        padding: 0.9rem 1rem;
-        font: inherit;
-        font-weight: 700;
-        cursor: pointer;
-        text-decoration: none;
-        text-align: center;
-        transition:
-          transform 0.18s ease,
-          box-shadow 0.18s ease;
-      }
-
-      .btn:hover {
-        transform: translateY(-1px);
-      }
-
-      .btn-primary {
-        color: #ffffff;
-        background: linear-gradient(135deg, var(--brand-800) 0%, var(--brand-600) 100%);
-        box-shadow: 0 12px 22px rgba(0, 122, 103, 0.24);
-      }
-
-      .btn-secondary {
-        color: #184c42;
-        background: rgba(255, 255, 255, 0.82);
-        border: 1px solid #b7d8cd;
-      }
-
-      .btn-danger {
-        color: #922f1f;
-        background: #fff4f1;
-        border: 1px solid #ffcbbf;
-      }
-
-      .card-main-nav {
-        border: 1px solid #a9d5c8;
-        background:
-          radial-gradient(180% 180% at 90% 10%, rgba(255, 255, 255, 0.58) 0%, rgba(255, 255, 255, 0) 54%),
-          linear-gradient(120deg, #e8fff7 0%, #eaf8ff 48%, #fef6df 100%);
-      }
-
-      .card-main-nav::before {
-        content: "";
-        position: absolute;
-        width: 240px;
-        height: 240px;
-        right: -72px;
-        top: -118px;
-        border-radius: 999px;
-        background: radial-gradient(circle, rgba(0, 122, 103, 0.18) 0%, rgba(0, 122, 103, 0) 74%);
-        pointer-events: none;
-      }
-
-      .main-nav-head {
-        margin-bottom: 0.45rem;
-      }
-
-      .main-nav-copy {
-        margin: 0;
-        font-size: 0.86rem;
-        color: #255a50;
-      }
-
-      .btn-home {
-        border: 1px solid #63bfa8;
-        color: #ffffff;
-        background: linear-gradient(120deg, #006e5d 0%, #00a383 70%, #00bc95 100%);
-        box-shadow: 0 12px 24px rgba(0, 109, 91, 0.26);
-      }
-
-      .btn-home .arrow {
-        display: inline-block;
-        margin-left: 0.35rem;
-        transition: transform 0.2s ease;
-      }
-
-      .btn-home:hover .arrow {
-        transform: translateX(3px);
-      }
-
-      @media (max-width: 760px) {
-        body {
-          padding: 0.8rem;
-        }
-
-        .wrap {
-          width: 100%;
-          margin: 0.6rem auto;
-          gap: 0.88rem;
-        }
-
-        .card {
-          border-radius: 20px;
-          padding: 1rem;
-        }
-
-        .head h1 {
-          font-size: 1.34rem;
-        }
-
-        .grid {
-          grid-template-columns: 1fr;
-        }
-
-        .actions {
-          flex-direction: column;
-        }
-      }
-    </style>
-  </head>
-
-  <body>
-    <div class="wrap">
-      <main class="card">
-        <header class="head">
-          <h1>회원정보 관리</h1>
-          <div>
-            <div class="user-email">{{ user.email }}</div>
-            <form action="/auth/logout/" method="post" style="margin-top: 0.3rem; text-align: right">
-              {% csrf_token %}
-              <button
-                type="submit"
-                style="
-                  border: 1px solid #ffd1c9;
-                  border-radius: 999px;
-                  background: #fff1ef;
-                  color: #8f2c1e;
-                  font-size: 0.75rem;
-                  padding: 0.2rem 0.6rem;
-                  cursor: pointer;
-                "
-              >
-                로그아웃
-              </button>
-            </form>
-          </div>
-        </header>
-
-        {% if message %}
-        <div class="message">{{ message }}</div>
-        {% endif %}
-        {% if error %}
-        <div class="error">{{ error }}</div>
-        {% endif %}
-      </main>
-
-      <section class="card">
-        <header class="head">
-          <h2>건강 정보 수정</h2>
-        </header>
-
-        <form action="/user/profile/" method="post" id="profileForm">
-          {% csrf_token %}
-          <input type="hidden" name="action" value="update_profile" />
-
-          <div class="grid">
-            <div class="field full">
-              <label for="med_search">현재 복용 중인 약</label>
-              <div class="med-input-row">
-                <div class="autocomplete-wrapper">
-                  <input
-                    type="text"
-                    id="med_search"
-                    autocomplete="off"
-                    placeholder="약 이름으로 검색 후 선택하세요"
-                  />
-                  <div id="med_dropdown" class="autocomplete-dropdown"></div>
-                </div>
-                <button type="button" id="btn_add_med" class="btn-add" disabled>추가</button>
-              </div>
-              <div id="med_tags" class="tags"></div>
-              <input type="hidden" name="current_medications" id="medications_hidden" value="{{ meds_value }}" />
-              <p class="hint">검색 결과에서 선택한 약만 저장됩니다.</p>
-            </div>
-
-            <div class="check full">
-              <label class="inline" for="has_disease">
-                <input
-                  type="checkbox"
-                  id="has_disease"
-                  {% if disease_value %}checked{% endif %}
-                  onchange="toggleInput('has_disease', 'disease_box')"
-                />
-                기저질환이 있습니다
-              </label>
-              <div id="disease_box" class="hidden-input" style="display: {% if disease_value %}block{% else %}none{% endif %};">
-                <div class="med-input-row">
-                  <div class="autocomplete-wrapper">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>회원정보 관리 - GDSI</title>
+
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Noto+Sans+KR:wght@400;500;700&display=swap"
+            rel="stylesheet"
+        />
+
+        <style>
+            :root {
+                --ink-950: #0b1916;
+                --ink-800: #19312c;
+                --ink-600: #3a5b53;
+                --line: #cfe1db;
+                --line-strong: #9cc4b8;
+                --brand-800: #00584b;
+                --brand-700: #007a67;
+                --brand-600: #00a383;
+                --accent: #f3b44d;
+                --card: rgba(255, 255, 255, 0.78);
+            }
+
+            * {
+                box-sizing: border-box;
+            }
+
+            html,
+            body {
+                min-height: 100%;
+            }
+
+            body {
+                margin: 0;
+                font-family: "Sora", "Noto Sans KR", sans-serif;
+                color: var(--ink-950);
+                background:
+                    radial-gradient(
+                        48rem 34rem at 105% -5%,
+                        rgba(0, 163, 131, 0.18) 0%,
+                        rgba(0, 163, 131, 0) 64%
+                    ),
+                    radial-gradient(
+                        40rem 24rem at -10% 100%,
+                        rgba(243, 180, 77, 0.22) 0%,
+                        rgba(243, 180, 77, 0) 62%
+                    ),
+                    linear-gradient(155deg, #f7fffc 0%, #f2f7ff 100%);
+                padding: 1.1rem;
+            }
+
+            .wrap {
+                width: min(960px, 100%);
+                margin: 1.1rem auto;
+                display: grid;
+                gap: 1.1rem;
+            }
+
+            .card {
+                position: relative;
+                overflow: hidden;
+                background: var(--card);
+                border: 1px solid rgba(255, 255, 255, 0.78);
+                border-radius: 26px;
+                box-shadow:
+                    0 14px 34px rgba(8, 44, 38, 0.12),
+                    0 4px 14px rgba(8, 44, 38, 0.06);
+                backdrop-filter: blur(10px);
+                padding: 1.25rem;
+                animation: card-rise 0.44s ease both;
+            }
+
+            .card::after {
+                content: "";
+                position: absolute;
+                inset: 0;
+                border-radius: inherit;
+                border: 1px solid rgba(255, 255, 255, 0.45);
+                pointer-events: none;
+            }
+
+            .card:nth-child(2) {
+                animation-delay: 0.06s;
+            }
+
+            .card:nth-child(3) {
+                animation-delay: 0.12s;
+            }
+
+            .card:nth-child(4) {
+                animation-delay: 0.18s;
+            }
+
+            .card:nth-child(5) {
+                animation-delay: 0.24s;
+            }
+
+            @keyframes card-rise {
+                from {
+                    opacity: 0;
+                    transform: translateY(10px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+
+            .head {
+                display: flex;
+                justify-content: space-between;
+                gap: 0.6rem;
+                align-items: center;
+                margin-bottom: 1rem;
+            }
+
+            .head h1,
+            .head h2 {
+                margin: 0;
+                letter-spacing: -0.024em;
+            }
+
+            .head h1 {
+                font-size: 1.58rem;
+            }
+
+            .head h2 {
+                font-size: 1.08rem;
+            }
+
+            .user-email {
+                display: inline-flex;
+                align-items: center;
+                padding: 0.36rem 0.68rem;
+                border-radius: 999px;
+                border: 1px solid #c6ddd4;
+                background: rgba(255, 255, 255, 0.74);
+                color: var(--ink-800);
+                font-size: 0.82rem;
+            }
+
+            .error,
+            .message {
+                border-radius: 14px;
+                padding: 0.78rem 0.84rem;
+                font-size: 0.86rem;
+                border-left-width: 4px;
+                border-left-style: solid;
+            }
+
+            .error {
+                background: #fff3f0;
+                color: #b23f2b;
+                border: 1px solid #ffd4cb;
+                border-left-color: #f26b52;
+            }
+
+            .message {
+                background: #edfcf5;
+                color: #1e6b4f;
+                border: 1px solid #bdebd6;
+                border-left-color: #17a26c;
+            }
+
+            .grid {
+                display: grid;
+                gap: 0.9rem;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .full {
+                grid-column: 1 / -1;
+            }
+
+            .field label,
+            .check label {
+                display: block;
+                font-size: 0.8rem;
+                font-weight: 700;
+                margin-bottom: 0.42rem;
+                letter-spacing: 0.01em;
+            }
+
+            input[type="text"],
+            input[type="password"] {
+                width: 100%;
+                border: 1px solid var(--line);
+                border-radius: 14px;
+                padding: 0.84rem 0.92rem;
+                font: inherit;
+                outline: none;
+                background: rgba(255, 255, 255, 0.9);
+                transition:
+                    border-color 0.18s ease,
+                    box-shadow 0.18s ease,
+                    transform 0.18s ease;
+            }
+
+            input[type="text"]::placeholder,
+            input[type="password"]::placeholder {
+                color: #6f8e85;
+            }
+
+            input:focus {
+                border-color: #58c6ab;
+                box-shadow: 0 0 0 4px rgba(0, 163, 131, 0.14);
+                transform: translateY(-1px);
+            }
+
+            .check {
+                border: 1px solid #d9e8e3;
+                border-radius: 16px;
+                background:
+                    radial-gradient(
+                        90% 220% at 110% -80%,
+                        rgba(0, 163, 131, 0.11) 0%,
+                        rgba(0, 163, 131, 0) 46%
+                    ),
+                    #f9fdfb;
+                padding: 0.84rem;
+            }
+
+            .check .inline {
+                display: inline-flex;
+                align-items: center;
+                gap: 0.5rem;
+                margin: 0;
+            }
+
+            .check input[type="checkbox"] {
+                width: 18px;
+                height: 18px;
+                accent-color: var(--brand-600);
+            }
+
+            .hidden-input {
+                display: none;
+                margin-top: 0.6rem;
+            }
+
+            .med-input-row {
+                display: flex;
+                gap: 0.5rem;
+                align-items: stretch;
+            }
+
+            .autocomplete-wrapper {
+                position: relative;
+                flex: 1;
+            }
+
+            .autocomplete-dropdown {
+                display: none;
+                position: absolute;
+                left: 0;
+                right: 0;
+                top: calc(100% + 6px);
+                z-index: 50;
+                max-height: 220px;
+                overflow-y: auto;
+                background: rgba(255, 255, 255, 0.98);
+                border: 1px solid #cae0d8;
+                border-radius: 13px;
+                box-shadow: 0 18px 30px rgba(8, 44, 38, 0.16);
+            }
+
+            .autocomplete-dropdown.show {
+                display: block;
+            }
+
+            .autocomplete-item {
+                display: flex;
+                justify-content: space-between;
+                gap: 0.5rem;
+                padding: 0.68rem 0.82rem;
+                font-size: 0.86rem;
+                cursor: pointer;
+                transition: background 0.15s ease;
+            }
+
+            .autocomplete-item:hover,
+            .autocomplete-item.active {
+                background: #f0fbf7;
+            }
+
+            .autocomplete-item .name {
+                font-weight: 700;
+            }
+
+            .autocomplete-item .maker {
+                color: #4f6f67;
+                font-size: 0.78rem;
+            }
+
+            .autocomplete-empty {
+                padding: 0.78rem;
+                text-align: center;
+                color: #5a7770;
+                font-size: 0.8rem;
+            }
+
+            .btn-add {
+                border: 1px solid #b2d7cb;
+                border-radius: 13px;
+                background: linear-gradient(180deg, #f5fffb 0%, #ecfaf4 100%);
+                color: #25584d;
+                padding: 0 1rem;
+                font-weight: 700;
+                cursor: pointer;
+                transition:
+                    transform 0.15s ease,
+                    box-shadow 0.15s ease;
+            }
+
+            .btn-add:hover {
+                transform: translateY(-1px);
+                box-shadow: 0 8px 18px rgba(0, 122, 103, 0.16);
+            }
+
+            .btn-add:disabled {
+                opacity: 0.48;
+                cursor: not-allowed;
+                box-shadow: none;
+                transform: none;
+            }
+
+            .tags {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 0.42rem;
+                margin-top: 0.52rem;
+            }
+
+            .tag {
+                display: inline-flex;
+                align-items: center;
+                gap: 0.3rem;
+                border: 1px solid #bbdcd1;
+                border-radius: 999px;
+                background: #f3fcf8;
+                color: #255c50;
+                padding: 0.28rem 0.66rem;
+                font-size: 0.79rem;
+            }
+
+            .tag-invalid {
+                border-color: #f4b5ab;
+                background: #fff2f0;
+                color: #9c3424;
+            }
+
+            .tag button {
+                border: 0;
+                background: transparent;
+                color: #497167;
+                font-size: 1rem;
+                cursor: pointer;
+                line-height: 1;
+            }
+
+            .hint {
+                margin-top: 0.44rem;
+                font-size: 0.78rem;
+                color: #466960;
+            }
+
+            .actions {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 0.68rem;
+                margin-top: 1rem;
+            }
+
+            .btn {
+                border: 0;
+                border-radius: 14px;
+                padding: 0.9rem 1rem;
+                font: inherit;
+                font-weight: 700;
+                cursor: pointer;
+                text-decoration: none;
+                text-align: center;
+                transition:
+                    transform 0.18s ease,
+                    box-shadow 0.18s ease;
+            }
+
+            .btn:hover {
+                transform: translateY(-1px);
+            }
+
+            .btn-primary {
+                color: #ffffff;
+                background: linear-gradient(
+                    135deg,
+                    var(--brand-800) 0%,
+                    var(--brand-600) 100%
+                );
+                box-shadow: 0 12px 22px rgba(0, 122, 103, 0.24);
+            }
+
+            .btn-secondary {
+                color: #184c42;
+                background: rgba(255, 255, 255, 0.82);
+                border: 1px solid #b7d8cd;
+            }
+
+            .btn-danger {
+                color: #922f1f;
+                background: #fff4f1;
+                border: 1px solid #ffcbbf;
+            }
+
+            .card-main-nav {
+                border: 1px solid #a9d5c8;
+                background:
+                    radial-gradient(
+                        180% 180% at 90% 10%,
+                        rgba(255, 255, 255, 0.58) 0%,
+                        rgba(255, 255, 255, 0) 54%
+                    ),
+                    linear-gradient(
+                        120deg,
+                        #e8fff7 0%,
+                        #eaf8ff 48%,
+                        #fef6df 100%
+                    );
+            }
+
+            .card-main-nav::before {
+                content: "";
+                position: absolute;
+                width: 240px;
+                height: 240px;
+                right: -72px;
+                top: -118px;
+                border-radius: 999px;
+                background: radial-gradient(
+                    circle,
+                    rgba(0, 122, 103, 0.18) 0%,
+                    rgba(0, 122, 103, 0) 74%
+                );
+                pointer-events: none;
+            }
+
+            .main-nav-head {
+                margin-bottom: 0.45rem;
+            }
+
+            .main-nav-copy {
+                margin: 0;
+                font-size: 0.86rem;
+                color: #255a50;
+            }
+
+            .btn-home {
+                border: 1px solid #63bfa8;
+                color: #ffffff;
+                background: linear-gradient(
+                    120deg,
+                    #006e5d 0%,
+                    #00a383 70%,
+                    #00bc95 100%
+                );
+                box-shadow: 0 12px 24px rgba(0, 109, 91, 0.26);
+            }
+
+            .btn-home .arrow {
+                display: inline-block;
+                margin-left: 0.35rem;
+                transition: transform 0.2s ease;
+            }
+
+            .btn-home:hover .arrow {
+                transform: translateX(3px);
+            }
+
+            @media (max-width: 760px) {
+                body {
+                    padding: 0.8rem;
+                }
+
+                .wrap {
+                    width: 100%;
+                    margin: 0.6rem auto;
+                    gap: 0.88rem;
+                }
+
+                .card {
+                    border-radius: 20px;
+                    padding: 1rem;
+                }
+
+                .head h1 {
+                    font-size: 1.34rem;
+                }
+
+                .grid {
+                    grid-template-columns: 1fr;
+                }
+
+                .actions {
+                    flex-direction: column;
+                }
+            }
+        </style>
+    </head>
+
+    <body>
+        <div class="wrap">
+            <main class="card">
+                <header class="head">
+                    <h1>회원정보 관리</h1>
+                    <div>
+                        <div class="user-email">{{ user.email }}</div>
+                        <form
+                            action="/auth/logout/"
+                            method="post"
+                            style="margin-top: 0.3rem; text-align: right"
+                        >
+                            {% csrf_token %}
+                            <button
+                                type="submit"
+                                style="
+                                    border: 1px solid #ffd1c9;
+                                    border-radius: 999px;
+                                    background: #fff1ef;
+                                    color: #8f2c1e;
+                                    font-size: 0.75rem;
+                                    padding: 0.2rem 0.6rem;
+                                    cursor: pointer;
+                                "
+                            >
+                                로그아웃
+                            </button>
+                        </form>
+                    </div>
+                </header>
+
+                {% if message %}
+                <div class="message">{{ message }}</div>
+                {% endif %} {% if error %}
+                <div class="error">{{ error }}</div>
+                {% endif %}
+            </main>
+
+            <section class="card">
+                <header class="head">
+                    <h2>건강 정보 수정</h2>
+                </header>
+
+                <form action="/user/profile/" method="post" id="profileForm">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="update_profile" />
+
+                    <div class="grid">
+                        <div class="field full">
+                            <label for="med_search">현재 복용 중인 약</label>
+                            <div class="med-input-row">
+                                <div class="autocomplete-wrapper">
+                                    <input
+                                        type="text"
+                                        id="med_search"
+                                        autocomplete="off"
+                                        placeholder="약 이름으로 검색 후 선택하세요"
+                                    />
+                                    <div
+                                        id="med_dropdown"
+                                        class="autocomplete-dropdown"
+                                    ></div>
+                                </div>
+                                <button
+                                    type="button"
+                                    id="btn_add_med"
+                                    class="btn-add"
+                                    disabled
+                                >
+                                    추가
+                                </button>
+                            </div>
+                            <div id="med_tags" class="tags"></div>
+                            <input
+                                type="hidden"
+                                name="current_medications"
+                                id="medications_hidden"
+                                value="{{ meds_value }}"
+                            />
+                            <p class="hint">
+                                검색에서 선택한 후
+                                <strong>추가 버튼을 눌러야</strong> 해당 약 수정
+                                내용이 저장됩니다.
+                            </p>
+                        </div>
+
+                        <div class="check full">
+                            <label class="inline" for="has_disease">
+                                <input
+                                    type="checkbox"
+                                    id="has_disease"
+                                    {%
+                                    if
+                                    disease_value
+                                    %}checked{%
+                                    endif
+                                    %}
+                                    onchange="
+                                        toggleInput(
+                                            'has_disease',
+                                            'disease_box',
+                                        )
+                                    "
+                                />
+                                기저질환이 있습니다
+                            </label>
+                            <div
+                                id="disease_box"
+                                class="hidden-input"
+                                style="display: {% if disease_value %}block{% else %}none{% endif %};"
+                            >
+                                <div class="med-input-row">
+                                    <div class="autocomplete-wrapper">
+                                        <input
+                                            type="text"
+                                            id="disease_search"
+                                            autocomplete="off"
+                                            placeholder="질환명 또는 KCD 코드 검색"
+                                        />
+                                        <div
+                                            id="disease_dropdown"
+                                            class="autocomplete-dropdown"
+                                        ></div>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        id="btn_add_disease"
+                                        class="btn-add"
+                                        disabled
+                                    >
+                                        추가
+                                    </button>
+                                </div>
+                                <div id="disease_tags" class="tags"></div>
+                                <input
+                                    type="hidden"
+                                    name="chronic_diseases"
+                                    id="disease_hidden"
+                                    value="{{ disease_value }}"
+                                />
+                                <p class="hint">
+                                    선택한 후
+                                    <strong>추가 버튼을 눌러야</strong> 해당
+                                    기저질환 수정 내용이 저장됩니다.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="check full">
+                            <label class="inline" for="has_allergy">
+                                <input
+                                    type="checkbox"
+                                    id="has_allergy"
+                                    {%
+                                    if
+                                    allergy_value
+                                    or
+                                    allergy_food_detail
+                                    %}checked{%
+                                    endif
+                                    %}
+                                    onchange="
+                                        toggleInput(
+                                            'has_allergy',
+                                            'allergy_box',
+                                        )
+                                    "
+                                />
+                                알레르기/주의 질환이 있습니다
+                            </label>
+                            <div
+                                id="allergy_box"
+                                class="hidden-input"
+                                style="display: {% if allergy_value or allergy_food_detail %}block{% else %}none{% endif %};"
+                            >
+                                <div class="med-input-row">
+                                    <div class="autocomplete-wrapper">
+                                        <input
+                                            type="text"
+                                            id="allergy_search"
+                                            autocomplete="off"
+                                            placeholder="알레르기 질환명 또는 KCD 코드 검색"
+                                        />
+                                        <div
+                                            id="allergy_dropdown"
+                                            class="autocomplete-dropdown"
+                                        ></div>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        id="btn_add_allergy"
+                                        class="btn-add"
+                                        disabled
+                                    >
+                                        추가
+                                    </button>
+                                </div>
+                                <div id="allergy_tags" class="tags"></div>
+                                <input
+                                    type="hidden"
+                                    name="allergies"
+                                    id="allergy_hidden"
+                                    value="{{ allergy_value }}"
+                                />
+                                <p class="hint">
+                                    선택한 후
+                                    <strong>추가 버튼을 눌러야</strong> 해당
+                                    알레르기 수정 내용이 저장됩니다. 음식
+                                    알레르기는 T78.1, T78.0, Z91.0 중 하나를
+                                    검색하세요.
+                                </p>
+                                <div
+                                    id="food_allergy_detail_wrap"
+                                    style="display: none; margin-top: 0.55rem"
+                                >
+                                    <input
+                                        type="text"
+                                        name="food_allergy_detail"
+                                        id="food_allergy_detail"
+                                        value="{{ allergy_food_detail }}"
+                                        placeholder="상세정보: 땅콩, 복숭아"
+                                    />
+                                    <p class="hint">
+                                        음식 알레르기는 `T78.1`, `T78.0`,
+                                        `Z91.0` 중 하나를 선택한 뒤 상세정보에
+                                        음식명을 입력하세요.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="check full">
+                            <label class="inline" for="is_pregnant">
+                                <input
+                                    type="checkbox"
+                                    name="is_pregnant"
+                                    id="is_pregnant"
+                                    {{
+                                    pregnant_checked
+                                    }}
+                                />
+                                현재 임신 또는 수유 중입니다.
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="actions">
+                        <button type="submit" class="btn btn-primary">
+                            건강 정보 저장
+                        </button>
+                    </div>
+                </form>
+            </section>
+
+            <section class="card">
+                <header class="head">
+                    <h2>비밀번호 변경</h2>
+                </header>
+
+                <form action="/user/profile/" method="post" class="grid">
+                    {% csrf_token %}
                     <input
-                      type="text"
-                      id="disease_search"
-                      autocomplete="off"
-                      placeholder="질환명 또는 KCD 코드 검색"
+                        type="hidden"
+                        name="action"
+                        value="update_password"
                     />
-                    <div id="disease_dropdown" class="autocomplete-dropdown"></div>
-                  </div>
-                  <button type="button" id="btn_add_disease" class="btn-add" disabled>추가</button>
+
+                    <div class="field">
+                        <label for="new_password">새 비밀번호</label>
+                        <input
+                            type="password"
+                            name="new_password"
+                            id="new_password"
+                            placeholder="새 비밀번호 입력"
+                            required
+                        />
+                    </div>
+                    <div class="field">
+                        <label for="confirm_password">새 비밀번호 확인</label>
+                        <input
+                            type="password"
+                            name="confirm_password"
+                            id="confirm_password"
+                            placeholder="새 비밀번호를 다시 입력"
+                            required
+                        />
+                    </div>
+
+                    <div class="actions full">
+                        <button type="submit" class="btn btn-primary">
+                            비밀번호 변경
+                        </button>
+                    </div>
+                </form>
+            </section>
+
+            <section class="card card-main-nav">
+                <header class="head main-nav-head">
+                    <h2>메인 이동</h2>
+                </header>
+                <p class="main-nav-copy">
+                    메인으로 돌아가 최신 추천과 검색을 바로 이어서 확인하세요.
+                </p>
+
+                <div class="actions" style="margin-top: 0">
+                    <a href="/" class="btn btn-home"
+                        >메인페이지로 돌아가기 <span class="arrow">→</span></a
+                    >
                 </div>
-                <div id="disease_tags" class="tags"></div>
-                <input type="hidden" name="chronic_diseases" id="disease_hidden" value="{{ disease_value }}" />
-                <p class="hint">선택된 항목은 `질병명 [코드]` 형식으로 저장됩니다.</p>
-              </div>
-            </div>
+            </section>
 
-            <div class="check full">
-              <label class="inline" for="has_allergy">
-                <input
-                  type="checkbox"
-                  id="has_allergy"
-                  {% if allergy_value or allergy_food_detail %}checked{% endif %}
-                  onchange="toggleInput('has_allergy', 'allergy_box')"
-                />
-                알레르기/주의 질환이 있습니다
-              </label>
-              <div id="allergy_box" class="hidden-input" style="display: {% if allergy_value or allergy_food_detail %}block{% else %}none{% endif %};">
-                <div class="med-input-row">
-                  <div class="autocomplete-wrapper">
-                    <input
-                      type="text"
-                      id="allergy_search"
-                      autocomplete="off"
-                      placeholder="알레르기 질환명 또는 KCD 코드 검색"
-                    />
-                    <div id="allergy_dropdown" class="autocomplete-dropdown"></div>
-                  </div>
-                  <button type="button" id="btn_add_allergy" class="btn-add" disabled>추가</button>
-                </div>
-                <div id="allergy_tags" class="tags"></div>
-                <input type="hidden" name="allergies" id="allergy_hidden" value="{{ allergy_value }}" />
-                <p class="hint">음식알러지가 있을땐 세 코드중 하나를 입력하세요: T78.1, T78.0, Z91.0</p>
-                <div id="food_allergy_detail_wrap" style="display: none; margin-top: 0.55rem">
-                  <input
-                    type="text"
-                    name="food_allergy_detail"
-                    id="food_allergy_detail"
-                    value="{{ allergy_food_detail }}"
-                    placeholder="상세정보: 땅콩, 복숭아"
-                  />
-                  <p class="hint">
-                    음식 알레르기는 `T78.1`, `T78.0`, `Z91.0` 중 하나를 선택한 뒤 상세정보에 음식명을 입력하세요.
-                  </p>
-                </div>
-              </div>
-            </div>
+            <section class="card">
+                <header class="head">
+                    <h2>계정 관리</h2>
+                </header>
 
-            <div class="check full">
-              <label class="inline" for="is_pregnant">
-                <input type="checkbox" name="is_pregnant" id="is_pregnant" {{ pregnant_checked }} />
-                현재 임신 또는 수유 중입니다.
-              </label>
-            </div>
-          </div>
-
-          <div class="actions">
-            <button type="submit" class="btn btn-primary">건강 정보 저장</button>
-          </div>
-        </form>
-      </section>
-
-      <section class="card">
-        <header class="head">
-          <h2>비밀번호 변경</h2>
-        </header>
-
-        <form action="/user/profile/" method="post" class="grid">
-          {% csrf_token %}
-          <input type="hidden" name="action" value="update_password" />
-
-          <div class="field">
-            <label for="new_password">새 비밀번호</label>
-            <input type="password" name="new_password" id="new_password" placeholder="새 비밀번호 입력" required />
-          </div>
-          <div class="field">
-            <label for="confirm_password">새 비밀번호 확인</label>
-            <input
-              type="password"
-              name="confirm_password"
-              id="confirm_password"
-              placeholder="새 비밀번호를 다시 입력"
-              required
-            />
-          </div>
-
-          <div class="actions full">
-            <button type="submit" class="btn btn-primary">비밀번호 변경</button>
-          </div>
-        </form>
-      </section>
-
-      <section class="card card-main-nav">
-        <header class="head main-nav-head">
-          <h2>메인 이동</h2>
-        </header>
-        <p class="main-nav-copy">메인으로 돌아가 최신 추천과 검색을 바로 이어서 확인하세요.</p>
-
-        <div class="actions" style="margin-top: 0">
-          <a href="/" class="btn btn-home">메인페이지로 돌아가기 <span class="arrow">→</span></a>
+                <form action="/user/profile/" method="post" id="deleteForm">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="delete_account" />
+                    <button
+                        type="button"
+                        class="btn btn-danger"
+                        onclick="confirmDelete()"
+                    >
+                        서비스 탈퇴
+                    </button>
+                </form>
+            </section>
         </div>
-      </section>
 
-      <section class="card">
-        <header class="head">
-          <h2>계정 관리</h2>
-        </header>
+        <script>
+            function toggleInput(checkboxId, targetId) {
+                const checkbox = document.getElementById(checkboxId);
+                const target = document.getElementById(targetId);
+                target.style.display = checkbox.checked ? "block" : "none";
+            }
 
-        <form action="/user/profile/" method="post" id="deleteForm">
-          {% csrf_token %}
-          <input type="hidden" name="action" value="delete_account" />
-          <button type="button" class="btn btn-danger" onclick="confirmDelete()">서비스 탈퇴</button>
-        </form>
-      </section>
-    </div>
+            function confirmDelete() {
+                if (confirm("정말로 탈퇴하시겠습니까?")) {
+                    document.getElementById("deleteForm").submit();
+                }
+            }
 
-    <script>
-      function toggleInput(checkboxId, targetId) {
-        const checkbox = document.getElementById(checkboxId);
-        const target = document.getElementById(targetId);
-        target.style.display = checkbox.checked ? "block" : "none";
-      }
+            function parseTokens(raw) {
+                return String(raw || "")
+                    .split(/[,;\n]+/)
+                    .map((item) => item.trim())
+                    .filter(Boolean);
+            }
 
-      function confirmDelete() {
-        if (confirm("정말로 탈퇴하시겠습니까?")) {
-          document.getElementById("deleteForm").submit();
-        }
-      }
+            const medSearch = document.getElementById("med_search");
+            const medDropdown = document.getElementById("med_dropdown");
+            const medTags = document.getElementById("med_tags");
+            const medHidden = document.getElementById("medications_hidden");
+            const btnAddMed = document.getElementById("btn_add_med");
 
-      function parseTokens(raw) {
-        return String(raw || "")
-          .split(/[,;\n]+/)
-          .map((item) => item.trim())
-          .filter(Boolean);
-      }
+            let selectedMeds = [];
+            let selectedDrug = null;
+            let activeIdx = -1;
+            let debounceTimer = null;
+            let currentDrugOptions = [];
 
-      const medSearch = document.getElementById("med_search");
-      const medDropdown = document.getElementById("med_dropdown");
-      const medTags = document.getElementById("med_tags");
-      const medHidden = document.getElementById("medications_hidden");
-      const btnAddMed = document.getElementById("btn_add_med");
+            function syncHiddenInput() {
+                medHidden.value = selectedMeds.join(", ");
+            }
 
-      let selectedMeds = [];
-      let selectedDrug = null;
-      let activeIdx = -1;
-      let debounceTimer = null;
-      let currentDrugOptions = [];
+            function renderMedTags() {
+                medTags.innerHTML = "";
+                selectedMeds.forEach((name, idx) => {
+                    const tag = document.createElement("span");
+                    tag.className = "tag";
+                    tag.innerHTML = `${name}<button type="button" data-idx="${idx}" aria-label="remove">&times;</button>`;
+                    medTags.appendChild(tag);
+                });
 
-      function syncHiddenInput() {
-        medHidden.value = selectedMeds.join(", ");
-      }
+                medTags.querySelectorAll("button").forEach((btn) => {
+                    btn.addEventListener("click", () => {
+                        selectedMeds.splice(Number(btn.dataset.idx), 1);
+                        renderMedTags();
+                        syncHiddenInput();
+                    });
+                });
+            }
 
-      function renderMedTags() {
-        medTags.innerHTML = "";
-        selectedMeds.forEach((name, idx) => {
-          const tag = document.createElement("span");
-          tag.className = "tag";
-          tag.innerHTML = `${name}<button type="button" data-idx="${idx}" aria-label="remove">&times;</button>`;
-          medTags.appendChild(tag);
-        });
+            function hasMedication(name) {
+                const key = String(name || "")
+                    .trim()
+                    .toLowerCase();
+                return selectedMeds.some((item) => item.toLowerCase() === key);
+            }
 
-        medTags.querySelectorAll("button").forEach((btn) => {
-          btn.addEventListener("click", () => {
-            selectedMeds.splice(Number(btn.dataset.idx), 1);
+            function hideMedDropdown() {
+                medDropdown.classList.remove("show");
+                medDropdown.innerHTML = "";
+                activeIdx = -1;
+            }
+
+            function selectDrug(item) {
+                selectedDrug = item || null;
+                medSearch.value = (item && item.item_name) || "";
+                btnAddMed.disabled = !selectedDrug;
+                hideMedDropdown();
+            }
+
+            function addSelectedMedication() {
+                if (!selectedDrug || !selectedDrug.item_name) {
+                    return;
+                }
+
+                const name = String(selectedDrug.item_name).trim();
+                if (name && !hasMedication(name)) {
+                    selectedMeds.push(name);
+                    renderMedTags();
+                    syncHiddenInput();
+                }
+
+                selectedDrug = null;
+                currentDrugOptions = [];
+                medSearch.value = "";
+                btnAddMed.disabled = true;
+                hideMedDropdown();
+                medSearch.focus();
+            }
+
+            function showMedDropdown(items) {
+                medDropdown.innerHTML = "";
+                activeIdx = -1;
+
+                if (!Array.isArray(items) || items.length === 0) {
+                    medDropdown.innerHTML =
+                        '<div class="autocomplete-empty">일치하는 약이 없습니다.</div>';
+                    medDropdown.classList.add("show");
+                    return;
+                }
+
+                items.forEach((item, idx) => {
+                    const row = document.createElement("div");
+                    row.className = "autocomplete-item";
+                    row.dataset.index = idx;
+                    row.innerHTML = `<span class="name">${item.item_name || ""}</span><span class="maker">${item.entp_name || ""}</span>`;
+                    row.addEventListener("mousedown", (e) => {
+                        e.preventDefault();
+                        selectDrug(item);
+                    });
+                    medDropdown.appendChild(row);
+                });
+
+                medDropdown.classList.add("show");
+            }
+
+            function highlightMedItem(idx) {
+                const rows = medDropdown.querySelectorAll(".autocomplete-item");
+                rows.forEach((row) => row.classList.remove("active"));
+                if (idx >= 0 && idx < rows.length) {
+                    rows[idx].classList.add("active");
+                    rows[idx].scrollIntoView({ block: "nearest" });
+                }
+            }
+
+            btnAddMed.addEventListener("click", addSelectedMedication);
+
+            medSearch.addEventListener("input", () => {
+                const q = medSearch.value.trim();
+                selectedDrug = null;
+                btnAddMed.disabled = true;
+
+                clearTimeout(debounceTimer);
+                if (q.length < 1) {
+                    currentDrugOptions = [];
+                    hideMedDropdown();
+                    return;
+                }
+
+                debounceTimer = setTimeout(() => {
+                    fetch(`/drug/search/?q=${encodeURIComponent(q)}`)
+                        .then((res) => res.json())
+                        .then((items) => {
+                            const list = Array.isArray(items) ? items : [];
+                            const qLower = q.toLowerCase();
+                            list.sort((a, b) => {
+                                const aPos = (a.item_name || "")
+                                    .toLowerCase()
+                                    .indexOf(qLower);
+                                const bPos = (b.item_name || "")
+                                    .toLowerCase()
+                                    .indexOf(qLower);
+                                const aScore = aPos === -1 ? 9999 : aPos;
+                                const bScore = bPos === -1 ? 9999 : bPos;
+                                return aScore - bScore;
+                            });
+                            currentDrugOptions = list.slice(0, 20);
+                            showMedDropdown(currentDrugOptions);
+                        })
+                        .catch(() => {
+                            currentDrugOptions = [];
+                            hideMedDropdown();
+                        });
+                }, 250);
+            });
+
+            medSearch.addEventListener("keydown", (e) => {
+                const rows = medDropdown.querySelectorAll(".autocomplete-item");
+
+                if (e.key === "Enter") {
+                    e.preventDefault();
+                    if (
+                        rows.length > 0 &&
+                        activeIdx >= 0 &&
+                        currentDrugOptions[activeIdx]
+                    ) {
+                        selectDrug(currentDrugOptions[activeIdx]);
+                        addSelectedMedication();
+                    }
+                    return;
+                }
+
+                if (!rows.length) {
+                    return;
+                }
+
+                if (e.key === "ArrowDown") {
+                    e.preventDefault();
+                    activeIdx = Math.min(activeIdx + 1, rows.length - 1);
+                    highlightMedItem(activeIdx);
+                } else if (e.key === "ArrowUp") {
+                    e.preventDefault();
+                    activeIdx = Math.max(activeIdx - 1, 0);
+                    highlightMedItem(activeIdx);
+                } else if (e.key === "Escape") {
+                    hideMedDropdown();
+                }
+            });
+
+            medSearch.addEventListener("blur", () => {
+                setTimeout(hideMedDropdown, 160);
+            });
+
+            function createKcdPicker(config) {
+                const searchInput = document.getElementById(config.searchId);
+                const dropdown = document.getElementById(config.dropdownId);
+                const addBtn = document.getElementById(config.addBtnId);
+                const tagsBox = document.getElementById(config.tagsId);
+                const hiddenInput = document.getElementById(config.hiddenId);
+                const FOOD_ALLERGY_PRESET = [
+                    {
+                        kcd_code: "T78.1",
+                        kcd_name:
+                            "\uAE30\uD0C0 \uC74C\uC2DD\uBB3C \uC720\uD574\uBC18\uC751",
+                    },
+                    {
+                        kcd_code: "T78.0",
+                        kcd_name:
+                            "\uC74C\uC2DD \uC720\uD574\uC791\uC6A9 \uC544\uB098\uD544\uB77D\uC2DC\uC2A4",
+                    },
+                    {
+                        kcd_code: "Z91.0",
+                        kcd_name:
+                            "\uC2DD\uD488 \uC54C\uB808\uB974\uAE30 \uAC1C\uC778\uB825",
+                    },
+                ];
+                const FOOD_ALLERGY_HINTS = [
+                    "\uC74C\uC2DD",
+                    "\uC2DD\uD488",
+                    "\uBA39",
+                    "\uC12D\uCDE8",
+                    "\uC54C\uB7EC\uC9C0",
+                    "\uC54C\uB808\uB974\uAE30",
+                    "\uB545\uCF69",
+                    "\uBCF5\uC22D\uC544",
+                    "\uACAC\uACFC",
+                    "\uC0C8\uC6B0",
+                    "\uAC8C",
+                    "\uC6B0\uC720",
+                    "\uACC4\uB780",
+                    "\uBC00",
+                    "\uCF69",
+                    "peanut",
+                    "peach",
+                    "food",
+                    "allergy",
+                ];
+
+                let selectedItems = [];
+                let invalidTokens = [];
+                let pendingItem = null;
+                let active = -1;
+                let timer = null;
+                let options = [];
+
+                function toDisplay(item) {
+                    return `${item.kcd_name} [${item.kcd_code}]`;
+                }
+
+                function syncHidden() {
+                    hiddenInput.value = selectedItems
+                        .map((item) => toDisplay(item))
+                        .join(", ");
+                    if (typeof config.onChange === "function") {
+                        config.onChange(
+                            selectedItems.map((item) => ({ ...item })),
+                        );
+                    }
+                }
+
+                function hasCode(item) {
+                    const code = String(item.kcd_code || "").toUpperCase();
+                    return selectedItems.some(
+                        (entry) =>
+                            String(entry.kcd_code || "").toUpperCase() === code,
+                    );
+                }
+
+                function renderTags() {
+                    tagsBox.innerHTML = "";
+
+                    selectedItems.forEach((item, idx) => {
+                        const tag = document.createElement("span");
+                        tag.className = "tag";
+                        tag.innerHTML = `${toDisplay(item)}<button type="button" data-kind="valid" data-idx="${idx}" aria-label="remove">&times;</button>`;
+                        tagsBox.appendChild(tag);
+                    });
+
+                    invalidTokens.forEach((value, idx) => {
+                        const tag = document.createElement("span");
+                        tag.className = "tag tag-invalid";
+                        tag.innerHTML = `${value}<button type="button" data-kind="invalid" data-idx="${idx}" aria-label="remove">&times;</button>`;
+                        tagsBox.appendChild(tag);
+                    });
+
+                    tagsBox.querySelectorAll("button").forEach((btn) => {
+                        btn.addEventListener("click", () => {
+                            const idx = Number(btn.dataset.idx);
+                            if (btn.dataset.kind === "valid") {
+                                selectedItems.splice(idx, 1);
+                            } else {
+                                invalidTokens.splice(idx, 1);
+                            }
+                            renderTags();
+                            syncHidden();
+                        });
+                    });
+                }
+
+                function hideDropdown() {
+                    dropdown.classList.remove("show");
+                    dropdown.innerHTML = "";
+                    active = -1;
+                }
+
+                function selectItem(item) {
+                    pendingItem = item || null;
+                    searchInput.value = item ? toDisplay(item) : "";
+                    addBtn.disabled = !pendingItem;
+                    hideDropdown();
+                }
+
+                function addSelected() {
+                    if (
+                        !pendingItem ||
+                        !pendingItem.kcd_code ||
+                        !pendingItem.kcd_name
+                    ) {
+                        return;
+                    }
+
+                    if (!hasCode(pendingItem)) {
+                        selectedItems.push({
+                            kcd_code: String(
+                                pendingItem.kcd_code,
+                            ).toUpperCase(),
+                            kcd_name: String(pendingItem.kcd_name || "").trim(),
+                        });
+                        renderTags();
+                        syncHidden();
+                    }
+
+                    pendingItem = null;
+                    options = [];
+                    searchInput.value = "";
+                    addBtn.disabled = true;
+                    hideDropdown();
+                    searchInput.focus();
+                }
+
+                function shouldInjectFoodAllergyPreset(queryText) {
+                    if (!config.foodAllergySuggest) {
+                        return false;
+                    }
+                    const q = String(queryText || "")
+                        .trim()
+                        .toLowerCase();
+                    if (!q) {
+                        return false;
+                    }
+                    if (
+                        q.includes("t78") ||
+                        q.includes("z91.0") ||
+                        q.includes("z910")
+                    ) {
+                        return true;
+                    }
+                    return FOOD_ALLERGY_HINTS.some((token) =>
+                        q.includes(token),
+                    );
+                }
+
+                function mergeFoodAllergyPreset(items, queryText) {
+                    if (!shouldInjectFoodAllergyPreset(queryText)) {
+                        return Array.isArray(items) ? items : [];
+                    }
+
+                    const merged = [];
+                    const seen = new Set();
+
+                    FOOD_ALLERGY_PRESET.forEach((item) => {
+                        const code = String(item.kcd_code || "").toUpperCase();
+                        if (!code || seen.has(code)) {
+                            return;
+                        }
+                        seen.add(code);
+                        merged.push(item);
+                    });
+
+                    (Array.isArray(items) ? items : []).forEach((item) => {
+                        const code = String(
+                            (item && item.kcd_code) || "",
+                        ).toUpperCase();
+                        if (!code || seen.has(code)) {
+                            return;
+                        }
+                        seen.add(code);
+                        merged.push(item);
+                    });
+
+                    return merged;
+                }
+
+                function showDropdown(items) {
+                    dropdown.innerHTML = "";
+                    active = -1;
+
+                    if (!Array.isArray(items) || items.length === 0) {
+                        dropdown.innerHTML =
+                            '<div class="autocomplete-empty">일치하는 KCD 항목이 없습니다.</div>';
+                        dropdown.classList.add("show");
+                        return;
+                    }
+
+                    items.forEach((item, idx) => {
+                        const row = document.createElement("div");
+                        row.className = "autocomplete-item";
+                        row.dataset.index = idx;
+                        row.innerHTML = `<span class="name">${item.kcd_name || ""}</span><span class="maker">${item.kcd_code || ""}</span>`;
+                        row.addEventListener("mousedown", (e) => {
+                            e.preventDefault();
+                            selectItem(item);
+                        });
+                        dropdown.appendChild(row);
+                    });
+
+                    dropdown.classList.add("show");
+                }
+
+                function highlight(idx) {
+                    const rows =
+                        dropdown.querySelectorAll(".autocomplete-item");
+                    rows.forEach((row) => row.classList.remove("active"));
+                    if (idx >= 0 && idx < rows.length) {
+                        rows[idx].classList.add("active");
+                        rows[idx].scrollIntoView({ block: "nearest" });
+                    }
+                }
+
+                function parseInitial(rawText) {
+                    const tokens = parseTokens(rawText);
+                    const valid = [];
+                    const invalid = [];
+                    const kcdRegex =
+                        /^(.*)\[\s*([A-Za-z]\d{2}(?:\.[0-9A-Za-z]{1,2})?)\s*\]$/;
+
+                    tokens.forEach((token) => {
+                        const matched = token.match(kcdRegex);
+                        if (!matched) {
+                            invalid.push(token);
+                            return;
+                        }
+                        const name = String(matched[1] || "").trim();
+                        const code = String(matched[2] || "")
+                            .trim()
+                            .toUpperCase();
+                        if (!name || !code) {
+                            invalid.push(token);
+                            return;
+                        }
+                        valid.push({ kcd_name: name, kcd_code: code });
+                    });
+
+                    selectedItems = valid;
+                    invalidTokens = invalid;
+                    renderTags();
+                    hiddenInput.value = selectedItems
+                        .map((item) => toDisplay(item))
+                        .join(", ");
+                }
+
+                addBtn.addEventListener("click", addSelected);
+
+                searchInput.addEventListener("input", () => {
+                    const q = searchInput.value.trim();
+                    pendingItem = null;
+                    addBtn.disabled = true;
+
+                    clearTimeout(timer);
+                    if (q.length < 1) {
+                        options = [];
+                        hideDropdown();
+                        return;
+                    }
+
+                    timer = setTimeout(() => {
+                        fetch(`/user/kcd/search/?q=${encodeURIComponent(q)}`)
+                            .then((res) => res.json())
+                            .then((items) => {
+                                const list = Array.isArray(items) ? items : [];
+                                const qLower = q.toLowerCase();
+                                const qCode = q
+                                    .replace(/\s+/g, "")
+                                    .toUpperCase();
+                                list.sort((a, b) => {
+                                    const aCode = String(
+                                        a.kcd_code || "",
+                                    ).toUpperCase();
+                                    const bCode = String(
+                                        b.kcd_code || "",
+                                    ).toUpperCase();
+                                    const aName = String(
+                                        a.kcd_name || "",
+                                    ).toLowerCase();
+                                    const bName = String(
+                                        b.kcd_name || "",
+                                    ).toLowerCase();
+
+                                    const score = (code, name) => {
+                                        if (code === qCode) return 0;
+                                        if (code.startsWith(qCode)) return 1;
+                                        if (qCode && code.includes(qCode))
+                                            return 2;
+                                        const pos = name.indexOf(qLower);
+                                        return pos === -1 ? 9999 : 100 + pos;
+                                    };
+
+                                    return (
+                                        score(aCode, aName) -
+                                        score(bCode, bName)
+                                    );
+                                });
+                                options = mergeFoodAllergyPreset(list, q).slice(
+                                    0,
+                                    20,
+                                );
+                                showDropdown(options);
+                            })
+                            .catch(() => {
+                                options = mergeFoodAllergyPreset([], q).slice(
+                                    0,
+                                    20,
+                                );
+                                if (options.length > 0) {
+                                    showDropdown(options);
+                                    return;
+                                }
+                                hideDropdown();
+                            });
+                    }, 250);
+                });
+
+                searchInput.addEventListener("keydown", (e) => {
+                    const rows =
+                        dropdown.querySelectorAll(".autocomplete-item");
+
+                    if (e.key === "Enter") {
+                        e.preventDefault();
+                        if (rows.length > 0 && active >= 0 && options[active]) {
+                            selectItem(options[active]);
+                            addSelected();
+                        }
+                        return;
+                    }
+
+                    if (!rows.length) {
+                        return;
+                    }
+
+                    if (e.key === "ArrowDown") {
+                        e.preventDefault();
+                        active = Math.min(active + 1, rows.length - 1);
+                        highlight(active);
+                    } else if (e.key === "ArrowUp") {
+                        e.preventDefault();
+                        active = Math.max(active - 1, 0);
+                        highlight(active);
+                    } else if (e.key === "Escape") {
+                        hideDropdown();
+                    }
+                });
+
+                searchInput.addEventListener("blur", () => {
+                    setTimeout(hideDropdown, 160);
+                });
+
+                parseInitial(hiddenInput.value || "");
+
+                return {
+                    clear() {
+                        selectedItems = [];
+                        invalidTokens = [];
+                        pendingItem = null;
+                        options = [];
+                        searchInput.value = "";
+                        addBtn.disabled = true;
+                        renderTags();
+                        syncHidden();
+                        hideDropdown();
+                    },
+                    getSelectedItems() {
+                        return selectedItems.map((item) => ({ ...item }));
+                    },
+                    hasInvalid() {
+                        return invalidTokens.length > 0;
+                    },
+                };
+            }
+
+            selectedMeds = parseTokens(medHidden.value || "");
             renderMedTags();
             syncHiddenInput();
-          });
-        });
-      }
 
-      function hasMedication(name) {
-        const key = String(name || "").trim().toLowerCase();
-        return selectedMeds.some((item) => item.toLowerCase() === key);
-      }
-
-      function hideMedDropdown() {
-        medDropdown.classList.remove("show");
-        medDropdown.innerHTML = "";
-        activeIdx = -1;
-      }
-
-      function selectDrug(item) {
-        selectedDrug = item || null;
-        medSearch.value = (item && item.item_name) || "";
-        btnAddMed.disabled = !selectedDrug;
-        hideMedDropdown();
-      }
-
-      function addSelectedMedication() {
-        if (!selectedDrug || !selectedDrug.item_name) {
-          return;
-        }
-
-        const name = String(selectedDrug.item_name).trim();
-        if (name && !hasMedication(name)) {
-          selectedMeds.push(name);
-          renderMedTags();
-          syncHiddenInput();
-        }
-
-        selectedDrug = null;
-        currentDrugOptions = [];
-        medSearch.value = "";
-        btnAddMed.disabled = true;
-        hideMedDropdown();
-        medSearch.focus();
-      }
-
-      function showMedDropdown(items) {
-        medDropdown.innerHTML = "";
-        activeIdx = -1;
-
-        if (!Array.isArray(items) || items.length === 0) {
-          medDropdown.innerHTML = '<div class="autocomplete-empty">일치하는 약이 없습니다.</div>';
-          medDropdown.classList.add("show");
-          return;
-        }
-
-        items.forEach((item, idx) => {
-          const row = document.createElement("div");
-          row.className = "autocomplete-item";
-          row.dataset.index = idx;
-          row.innerHTML = `<span class="name">${item.item_name || ""}</span><span class="maker">${item.entp_name || ""}</span>`;
-          row.addEventListener("mousedown", (e) => {
-            e.preventDefault();
-            selectDrug(item);
-          });
-          medDropdown.appendChild(row);
-        });
-
-        medDropdown.classList.add("show");
-      }
-
-      function highlightMedItem(idx) {
-        const rows = medDropdown.querySelectorAll(".autocomplete-item");
-        rows.forEach((row) => row.classList.remove("active"));
-        if (idx >= 0 && idx < rows.length) {
-          rows[idx].classList.add("active");
-          rows[idx].scrollIntoView({ block: "nearest" });
-        }
-      }
-
-      btnAddMed.addEventListener("click", addSelectedMedication);
-
-      medSearch.addEventListener("input", () => {
-        const q = medSearch.value.trim();
-        selectedDrug = null;
-        btnAddMed.disabled = true;
-
-        clearTimeout(debounceTimer);
-        if (q.length < 1) {
-          currentDrugOptions = [];
-          hideMedDropdown();
-          return;
-        }
-
-        debounceTimer = setTimeout(() => {
-          fetch(`/drug/search/?q=${encodeURIComponent(q)}`)
-            .then((res) => res.json())
-            .then((items) => {
-              const list = Array.isArray(items) ? items : [];
-              const qLower = q.toLowerCase();
-              list.sort((a, b) => {
-                const aPos = (a.item_name || "").toLowerCase().indexOf(qLower);
-                const bPos = (b.item_name || "").toLowerCase().indexOf(qLower);
-                const aScore = aPos === -1 ? 9999 : aPos;
-                const bScore = bPos === -1 ? 9999 : bPos;
-                return aScore - bScore;
-              });
-              currentDrugOptions = list.slice(0, 20);
-              showMedDropdown(currentDrugOptions);
-            })
-            .catch(() => {
-              currentDrugOptions = [];
-              hideMedDropdown();
+            const diseasePicker = createKcdPicker({
+                searchId: "disease_search",
+                dropdownId: "disease_dropdown",
+                addBtnId: "btn_add_disease",
+                tagsId: "disease_tags",
+                hiddenId: "disease_hidden",
             });
-        }, 250);
-      });
 
-      medSearch.addEventListener("keydown", (e) => {
-        const rows = medDropdown.querySelectorAll(".autocomplete-item");
-
-        if (e.key === "Enter") {
-          e.preventDefault();
-          if (rows.length > 0 && activeIdx >= 0 && currentDrugOptions[activeIdx]) {
-            selectDrug(currentDrugOptions[activeIdx]);
-            addSelectedMedication();
-          }
-          return;
-        }
-
-        if (!rows.length) {
-          return;
-        }
-
-        if (e.key === "ArrowDown") {
-          e.preventDefault();
-          activeIdx = Math.min(activeIdx + 1, rows.length - 1);
-          highlightMedItem(activeIdx);
-        } else if (e.key === "ArrowUp") {
-          e.preventDefault();
-          activeIdx = Math.max(activeIdx - 1, 0);
-          highlightMedItem(activeIdx);
-        } else if (e.key === "Escape") {
-          hideMedDropdown();
-        }
-      });
-
-      medSearch.addEventListener("blur", () => {
-        setTimeout(hideMedDropdown, 160);
-      });
-
-      function createKcdPicker(config) {
-        const searchInput = document.getElementById(config.searchId);
-        const dropdown = document.getElementById(config.dropdownId);
-        const addBtn = document.getElementById(config.addBtnId);
-        const tagsBox = document.getElementById(config.tagsId);
-        const hiddenInput = document.getElementById(config.hiddenId);
-        const FOOD_ALLERGY_PRESET = [
-          { kcd_code: "T78.1", kcd_name: "\uAE30\uD0C0 \uC74C\uC2DD\uBB3C \uC720\uD574\uBC18\uC751" },
-          { kcd_code: "T78.0", kcd_name: "\uC74C\uC2DD \uC720\uD574\uC791\uC6A9 \uC544\uB098\uD544\uB77D\uC2DC\uC2A4" },
-          { kcd_code: "Z91.0", kcd_name: "\uC2DD\uD488 \uC54C\uB808\uB974\uAE30 \uAC1C\uC778\uB825" },
-        ];
-        const FOOD_ALLERGY_HINTS = [
-          "\uC74C\uC2DD",
-          "\uC2DD\uD488",
-          "\uBA39",
-          "\uC12D\uCDE8",
-          "\uC54C\uB7EC\uC9C0",
-          "\uC54C\uB808\uB974\uAE30",
-          "\uB545\uCF69",
-          "\uBCF5\uC22D\uC544",
-          "\uACAC\uACFC",
-          "\uC0C8\uC6B0",
-          "\uAC8C",
-          "\uC6B0\uC720",
-          "\uACC4\uB780",
-          "\uBC00",
-          "\uCF69",
-          "peanut",
-          "peach",
-          "food",
-          "allergy",
-        ];
-
-        let selectedItems = [];
-        let invalidTokens = [];
-        let pendingItem = null;
-        let active = -1;
-        let timer = null;
-        let options = [];
-
-        function toDisplay(item) {
-          return `${item.kcd_name} [${item.kcd_code}]`;
-        }
-
-        function syncHidden() {
-          hiddenInput.value = selectedItems.map((item) => toDisplay(item)).join(", ");
-          if (typeof config.onChange === "function") {
-            config.onChange(selectedItems.map((item) => ({ ...item })));
-          }
-        }
-
-        function hasCode(item) {
-          const code = String(item.kcd_code || "").toUpperCase();
-          return selectedItems.some((entry) => String(entry.kcd_code || "").toUpperCase() === code);
-        }
-
-        function renderTags() {
-          tagsBox.innerHTML = "";
-
-          selectedItems.forEach((item, idx) => {
-            const tag = document.createElement("span");
-            tag.className = "tag";
-            tag.innerHTML = `${toDisplay(item)}<button type="button" data-kind="valid" data-idx="${idx}" aria-label="remove">&times;</button>`;
-            tagsBox.appendChild(tag);
-          });
-
-          invalidTokens.forEach((value, idx) => {
-            const tag = document.createElement("span");
-            tag.className = "tag tag-invalid";
-            tag.innerHTML = `${value}<button type="button" data-kind="invalid" data-idx="${idx}" aria-label="remove">&times;</button>`;
-            tagsBox.appendChild(tag);
-          });
-
-          tagsBox.querySelectorAll("button").forEach((btn) => {
-            btn.addEventListener("click", () => {
-              const idx = Number(btn.dataset.idx);
-              if (btn.dataset.kind === "valid") {
-                selectedItems.splice(idx, 1);
-              } else {
-                invalidTokens.splice(idx, 1);
-              }
-              renderTags();
-              syncHidden();
+            const allergyPicker = createKcdPicker({
+                searchId: "allergy_search",
+                dropdownId: "allergy_dropdown",
+                addBtnId: "btn_add_allergy",
+                tagsId: "allergy_tags",
+                hiddenId: "allergy_hidden",
+                foodAllergySuggest: true,
+                onChange: syncFoodDetailVisibility,
             });
-          });
-        }
 
-        function hideDropdown() {
-          dropdown.classList.remove("show");
-          dropdown.innerHTML = "";
-          active = -1;
-        }
+            const hasDisease = document.getElementById("has_disease");
+            const hasAllergy = document.getElementById("has_allergy");
+            const foodAllergyDetailInput = document.getElementById(
+                "food_allergy_detail",
+            );
+            const foodAllergyDetailWrap = document.getElementById(
+                "food_allergy_detail_wrap",
+            );
+            const allergyHidden = document.getElementById("allergy_hidden");
 
-        function selectItem(item) {
-          pendingItem = item || null;
-          searchInput.value = item ? toDisplay(item) : "";
-          addBtn.disabled = !pendingItem;
-          hideDropdown();
-        }
-
-        function addSelected() {
-          if (!pendingItem || !pendingItem.kcd_code || !pendingItem.kcd_name) {
-            return;
-          }
-
-          if (!hasCode(pendingItem)) {
-            selectedItems.push({
-              kcd_code: String(pendingItem.kcd_code).toUpperCase(),
-              kcd_name: String(pendingItem.kcd_name || "").trim(),
-            });
-            renderTags();
-            syncHidden();
-          }
-
-          pendingItem = null;
-          options = [];
-          searchInput.value = "";
-          addBtn.disabled = true;
-          hideDropdown();
-          searchInput.focus();
-        }
-
-        function shouldInjectFoodAllergyPreset(queryText) {
-          if (!config.foodAllergySuggest) {
-            return false;
-          }
-          const q = String(queryText || "").trim().toLowerCase();
-          if (!q) {
-            return false;
-          }
-          if (q.includes("t78") || q.includes("z91.0") || q.includes("z910")) {
-            return true;
-          }
-          return FOOD_ALLERGY_HINTS.some((token) => q.includes(token));
-        }
-
-        function mergeFoodAllergyPreset(items, queryText) {
-          if (!shouldInjectFoodAllergyPreset(queryText)) {
-            return Array.isArray(items) ? items : [];
-          }
-
-          const merged = [];
-          const seen = new Set();
-
-          FOOD_ALLERGY_PRESET.forEach((item) => {
-            const code = String(item.kcd_code || "").toUpperCase();
-            if (!code || seen.has(code)) {
-              return;
-            }
-            seen.add(code);
-            merged.push(item);
-          });
-
-          (Array.isArray(items) ? items : []).forEach((item) => {
-            const code = String((item && item.kcd_code) || "").toUpperCase();
-            if (!code || seen.has(code)) {
-              return;
-            }
-            seen.add(code);
-            merged.push(item);
-          });
-
-          return merged;
-        }
-
-        function showDropdown(items) {
-          dropdown.innerHTML = "";
-          active = -1;
-
-          if (!Array.isArray(items) || items.length === 0) {
-            dropdown.innerHTML = '<div class="autocomplete-empty">일치하는 KCD 항목이 없습니다.</div>';
-            dropdown.classList.add("show");
-            return;
-          }
-
-          items.forEach((item, idx) => {
-            const row = document.createElement("div");
-            row.className = "autocomplete-item";
-            row.dataset.index = idx;
-            row.innerHTML = `<span class="name">${item.kcd_name || ""}</span><span class="maker">${item.kcd_code || ""}</span>`;
-            row.addEventListener("mousedown", (e) => {
-              e.preventDefault();
-              selectItem(item);
-            });
-            dropdown.appendChild(row);
-          });
-
-          dropdown.classList.add("show");
-        }
-
-        function highlight(idx) {
-          const rows = dropdown.querySelectorAll(".autocomplete-item");
-          rows.forEach((row) => row.classList.remove("active"));
-          if (idx >= 0 && idx < rows.length) {
-            rows[idx].classList.add("active");
-            rows[idx].scrollIntoView({ block: "nearest" });
-          }
-        }
-
-        function parseInitial(rawText) {
-          const tokens = parseTokens(rawText);
-          const valid = [];
-          const invalid = [];
-          const kcdRegex = /^(.*)\[\s*([A-Za-z]\d{2}(?:\.[0-9A-Za-z]{1,2})?)\s*\]$/;
-
-          tokens.forEach((token) => {
-            const matched = token.match(kcdRegex);
-            if (!matched) {
-              invalid.push(token);
-              return;
-            }
-            const name = String(matched[1] || "").trim();
-            const code = String(matched[2] || "").trim().toUpperCase();
-            if (!name || !code) {
-              invalid.push(token);
-              return;
-            }
-            valid.push({ kcd_name: name, kcd_code: code });
-          });
-
-          selectedItems = valid;
-          invalidTokens = invalid;
-          renderTags();
-          hiddenInput.value = selectedItems.map((item) => toDisplay(item)).join(", ");
-        }
-
-        addBtn.addEventListener("click", addSelected);
-
-        searchInput.addEventListener("input", () => {
-          const q = searchInput.value.trim();
-          pendingItem = null;
-          addBtn.disabled = true;
-
-          clearTimeout(timer);
-          if (q.length < 1) {
-            options = [];
-            hideDropdown();
-            return;
-          }
-
-          timer = setTimeout(() => {
-            fetch(`/user/kcd/search/?q=${encodeURIComponent(q)}`)
-              .then((res) => res.json())
-              .then((items) => {
-                const list = Array.isArray(items) ? items : [];
-                const qLower = q.toLowerCase();
-                const qCode = q.replace(/\s+/g, "").toUpperCase();
-                list.sort((a, b) => {
-                  const aCode = String(a.kcd_code || "").toUpperCase();
-                  const bCode = String(b.kcd_code || "").toUpperCase();
-                  const aName = String(a.kcd_name || "").toLowerCase();
-                  const bName = String(b.kcd_name || "").toLowerCase();
-
-                  const score = (code, name) => {
-                    if (code === qCode) return 0;
-                    if (code.startsWith(qCode)) return 1;
-                    if (qCode && code.includes(qCode)) return 2;
-                    const pos = name.indexOf(qLower);
-                    return pos === -1 ? 9999 : 100 + pos;
-                  };
-
-                  return score(aCode, aName) - score(bCode, bName);
-                });
-                options = mergeFoodAllergyPreset(list, q).slice(0, 20);
-                showDropdown(options);
-              })
-              .catch(() => {
-                options = mergeFoodAllergyPreset([], q).slice(0, 20);
-                if (options.length > 0) {
-                  showDropdown(options);
-                  return;
+            function hasFoodDetailCodeSelected(selectedItems) {
+                if (Array.isArray(selectedItems) && selectedItems.length > 0) {
+                    return selectedItems.some((item) =>
+                        ["T78.1", "T78.0", "Z91.0"].includes(
+                            String(item.kcd_code || "").toUpperCase(),
+                        ),
+                    );
                 }
-                hideDropdown();
-              });
-          }, 250);
-        });
 
-        searchInput.addEventListener("keydown", (e) => {
-          const rows = dropdown.querySelectorAll(".autocomplete-item");
+                const text = String(
+                    (allergyHidden && allergyHidden.value) || "",
+                ).toUpperCase();
+                if (/T78\.1|T78\.0|Z91\.0/.test(text)) {
+                    return true;
+                }
 
-          if (e.key === "Enter") {
-            e.preventDefault();
-            if (rows.length > 0 && active >= 0 && options[active]) {
-              selectItem(options[active]);
-              addSelected();
+                const tagsText = String(
+                    (document.getElementById("allergy_tags") &&
+                        document.getElementById("allergy_tags").textContent) ||
+                        "",
+                ).toUpperCase();
+                return /T78\.1|T78\.0|Z91\.0/.test(tagsText);
             }
-            return;
-          }
 
-          if (!rows.length) {
-            return;
-          }
+            function syncFoodDetailVisibility(selectedItems) {
+                if (!foodAllergyDetailWrap || !foodAllergyDetailInput) {
+                    return;
+                }
+                const allergyCheckbox = document.getElementById("has_allergy");
+                const visible =
+                    Boolean(allergyCheckbox && allergyCheckbox.checked) &&
+                    hasFoodDetailCodeSelected(selectedItems);
+                foodAllergyDetailWrap.style.display = visible
+                    ? "block"
+                    : "none";
+                if (!visible) {
+                    foodAllergyDetailInput.value = "";
+                }
+            }
 
-          if (e.key === "ArrowDown") {
-            e.preventDefault();
-            active = Math.min(active + 1, rows.length - 1);
-            highlight(active);
-          } else if (e.key === "ArrowUp") {
-            e.preventDefault();
-            active = Math.max(active - 1, 0);
-            highlight(active);
-          } else if (e.key === "Escape") {
-            hideDropdown();
-          }
-        });
+            hasDisease.addEventListener("change", () => {
+                if (!hasDisease.checked) {
+                    diseasePicker.clear();
+                }
+            });
 
-        searchInput.addEventListener("blur", () => {
-          setTimeout(hideDropdown, 160);
-        });
+            hasAllergy.addEventListener("change", () => {
+                if (!hasAllergy.checked) {
+                    allergyPicker.clear();
+                }
+                syncFoodDetailVisibility(
+                    allergyPicker ? allergyPicker.getSelectedItems() : [],
+                );
+            });
 
-        parseInitial(hiddenInput.value || "");
+            document
+                .getElementById("profileForm")
+                .addEventListener("submit", (e) => {
+                    syncHiddenInput();
 
-        return {
-          clear() {
-            selectedItems = [];
-            invalidTokens = [];
-            pendingItem = null;
-            options = [];
-            searchInput.value = "";
-            addBtn.disabled = true;
-            renderTags();
-            syncHidden();
-            hideDropdown();
-          },
-          getSelectedItems() {
-            return selectedItems.map((item) => ({ ...item }));
-          },
-          hasInvalid() {
-            return invalidTokens.length > 0;
-          },
-        };
-      }
+                    if (!hasDisease.checked) {
+                        document.getElementById("disease_hidden").value = "";
+                    }
+                    if (!hasAllergy.checked) {
+                        document.getElementById("allergy_hidden").value = "";
+                        syncFoodDetailVisibility([]);
+                    }
 
-      selectedMeds = parseTokens(medHidden.value || "");
-      renderMedTags();
-      syncHiddenInput();
+                    if (hasDisease.checked && diseasePicker.hasInvalid()) {
+                        e.preventDefault();
+                        alert(
+                            "기저질환에 코드 없는 항목이 있습니다. 검색 결과에서 다시 선택해주세요.",
+                        );
+                        return;
+                    }
 
-      const diseasePicker = createKcdPicker({
-        searchId: "disease_search",
-        dropdownId: "disease_dropdown",
-        addBtnId: "btn_add_disease",
-        tagsId: "disease_tags",
-        hiddenId: "disease_hidden",
-      });
+                    if (hasAllergy.checked && allergyPicker.hasInvalid()) {
+                        e.preventDefault();
+                        alert(
+                            "알레르기에 코드 없는 항목이 있습니다. 검색 결과에서 다시 선택해주세요.",
+                        );
+                        return;
+                    }
+                });
 
-      const allergyPicker = createKcdPicker({
-        searchId: "allergy_search",
-        dropdownId: "allergy_dropdown",
-        addBtnId: "btn_add_allergy",
-        tagsId: "allergy_tags",
-        hiddenId: "allergy_hidden",
-        foodAllergySuggest: true,
-        onChange: syncFoodDetailVisibility,
-      });
-
-      const hasDisease = document.getElementById("has_disease");
-      const hasAllergy = document.getElementById("has_allergy");
-      const foodAllergyDetailInput = document.getElementById("food_allergy_detail");
-      const foodAllergyDetailWrap = document.getElementById("food_allergy_detail_wrap");
-      const allergyHidden = document.getElementById("allergy_hidden");
-
-      function hasFoodDetailCodeSelected(selectedItems) {
-        if (Array.isArray(selectedItems) && selectedItems.length > 0) {
-          return selectedItems.some((item) =>
-            ["T78.1", "T78.0", "Z91.0"].includes(String(item.kcd_code || "").toUpperCase())
-          );
-        }
-
-        const text = String((allergyHidden && allergyHidden.value) || "").toUpperCase();
-        if (/T78\.1|T78\.0|Z91\.0/.test(text)) {
-          return true;
-        }
-
-        const tagsText = String(
-          (document.getElementById("allergy_tags") && document.getElementById("allergy_tags").textContent) || ""
-        ).toUpperCase();
-        return /T78\.1|T78\.0|Z91\.0/.test(tagsText);
-      }
-
-      function syncFoodDetailVisibility(selectedItems) {
-        if (!foodAllergyDetailWrap || !foodAllergyDetailInput) {
-          return;
-        }
-        const allergyCheckbox = document.getElementById("has_allergy");
-        const visible =
-          Boolean(allergyCheckbox && allergyCheckbox.checked) &&
-          hasFoodDetailCodeSelected(selectedItems);
-        foodAllergyDetailWrap.style.display = visible ? "block" : "none";
-        if (!visible) {
-          foodAllergyDetailInput.value = "";
-        }
-      }
-
-      hasDisease.addEventListener("change", () => {
-        if (!hasDisease.checked) {
-          diseasePicker.clear();
-        }
-      });
-
-      hasAllergy.addEventListener("change", () => {
-        if (!hasAllergy.checked) {
-          allergyPicker.clear();
-        }
-        syncFoodDetailVisibility(allergyPicker ? allergyPicker.getSelectedItems() : []);
-      });
-
-      document.getElementById("profileForm").addEventListener("submit", (e) => {
-        syncHiddenInput();
-
-        if (!hasDisease.checked) {
-          document.getElementById("disease_hidden").value = "";
-        }
-        if (!hasAllergy.checked) {
-          document.getElementById("allergy_hidden").value = "";
-          syncFoodDetailVisibility([]);
-        }
-
-        if (hasDisease.checked && diseasePicker.hasInvalid()) {
-          e.preventDefault();
-          alert("기저질환에 코드 없는 항목이 있습니다. 검색 결과에서 다시 선택해주세요.");
-          return;
-        }
-
-        if (hasAllergy.checked && allergyPicker.hasInvalid()) {
-          e.preventDefault();
-          alert("알레르기에 코드 없는 항목이 있습니다. 검색 결과에서 다시 선택해주세요.");
-          return;
-        }
-      });
-
-      syncFoodDetailVisibility(allergyPicker ? allergyPicker.getSelectedItems() : []);
-    </script>
-  </body>
+            syncFoodDetailVisibility(
+                allergyPicker ? allergyPicker.getSelectedItems() : [],
+            );
+        </script>
+    </body>
 </html>

@@ -1,1040 +1,1248 @@
 <!doctype html>
 <html lang="ko">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>회원가입 - GDSI</title>
-
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Noto+Sans+KR:wght@400;500;700&display=swap"
-      rel="stylesheet"
-    />
-
-    <style>
-      :root {
-        --ink-900: #07211d;
-        --ink-700: #2b4a44;
-        --line: #d2e7df;
-        --brand-700: #006d5b;
-        --brand-600: #00806a;
-        --card: #ffffff;
-      }
-
-      * {
-        box-sizing: border-box;
-      }
-
-      body {
-        margin: 0;
-        min-height: 100vh;
-        font-family: "Sora", "Noto Sans KR", sans-serif;
-        color: var(--ink-900);
-        background:
-          radial-gradient(900px 400px at 110% -10%, #d9fff3 0%, transparent 60%),
-          radial-gradient(820px 340px at -10% 110%, #ffe8cf 0%, transparent 60%),
-          #f4faf7;
-        padding: 1rem;
-      }
-
-      .wrap {
-        width: min(760px, 100%);
-        margin: 1.2rem auto;
-      }
-
-      .card {
-        background: var(--card);
-        border: 1px solid var(--line);
-        border-radius: 24px;
-        box-shadow: 0 20px 45px rgba(4, 37, 32, 0.1);
-        padding: 1.5rem;
-      }
-
-      .head {
-        margin-bottom: 1.1rem;
-      }
-
-      .head h1 {
-        margin: 0;
-        font-size: 1.5rem;
-        letter-spacing: -0.02em;
-      }
-
-      .head p {
-        margin: 0.45rem 0 0;
-        color: var(--ink-700);
-        font-size: 0.9rem;
-      }
-
-      .error {
-        background: #fff1ef;
-        color: #b5402a;
-        border: 1px solid #ffd1c9;
-        border-radius: 12px;
-        padding: 0.75rem;
-        margin-bottom: 1rem;
-        font-size: 0.88rem;
-      }
-
-      .grid {
-        display: grid;
-        gap: 0.85rem;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-      }
-
-      .full {
-        grid-column: 1 / -1;
-      }
-
-      .field label {
-        display: block;
-        font-size: 0.82rem;
-        font-weight: 700;
-        margin-bottom: 0.42rem;
-      }
-
-      input,
-      textarea {
-        width: 100%;
-        border: 1px solid #c9ddd5;
-        border-radius: 12px;
-        padding: 0.82rem 0.9rem;
-        font: inherit;
-        outline: none;
-        background: #ffffff;
-      }
-
-      input:focus,
-      textarea:focus {
-        border-color: #5ecfb5;
-        box-shadow: 0 0 0 4px rgba(0, 128, 106, 0.13);
-      }
-
-      textarea {
-        resize: vertical;
-        min-height: 96px;
-      }
-
-      .check {
-        border: 1px solid #d8e8e2;
-        border-radius: 12px;
-        background: #f8fdfa;
-        padding: 0.8rem;
-      }
-
-      .check label {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.5rem;
-        font-size: 0.9rem;
-        margin: 0;
-      }
-
-      .check input[type="checkbox"] {
-        width: 18px;
-        height: 18px;
-      }
-
-      .hidden-input {
-        display: none;
-        margin-top: 0.55rem;
-      }
-
-      .error-text {
-        display: none;
-        margin-top: 0.35rem;
-        color: #b5402a;
-        font-size: 0.8rem;
-      }
-
-      .hint {
-        margin-top: 0.4rem;
-        font-size: 0.78rem;
-        color: #486860;
-      }
-
-      .med-input-row {
-        display: flex;
-        gap: 0.5rem;
-        align-items: stretch;
-      }
-
-      .autocomplete-wrapper {
-        position: relative;
-        flex: 1;
-      }
-
-      .autocomplete-dropdown {
-        display: none;
-        position: absolute;
-        left: 0;
-        right: 0;
-        top: calc(100% + 4px);
-        z-index: 50;
-        max-height: 220px;
-        overflow-y: auto;
-        background: #fff;
-        border: 1px solid #c9ddd5;
-        border-radius: 12px;
-        box-shadow: 0 14px 24px rgba(4, 37, 32, 0.12);
-      }
-
-      .autocomplete-dropdown.show {
-        display: block;
-      }
-
-      .autocomplete-item {
-        display: flex;
-        justify-content: space-between;
-        gap: 0.5rem;
-        padding: 0.66rem 0.8rem;
-        font-size: 0.86rem;
-        cursor: pointer;
-      }
-
-      .autocomplete-item:hover,
-      .autocomplete-item.active {
-        background: #f2fbf7;
-      }
-
-      .autocomplete-item .name {
-        font-weight: 700;
-      }
-
-      .autocomplete-item .maker {
-        color: #4f6f67;
-        font-size: 0.78rem;
-      }
-
-      .autocomplete-empty {
-        padding: 0.75rem;
-        text-align: center;
-        color: #4f6f67;
-        font-size: 0.8rem;
-      }
-
-      .btn-add-med {
-        border: 1px solid #b5ded2;
-        border-radius: 12px;
-        background: #f2fbf7;
-        padding: 0 1rem;
-        font-weight: 700;
-        cursor: pointer;
-      }
-
-      .btn-add-med:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-      }
-
-      .med-tags {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.4rem;
-        margin-top: 0.5rem;
-      }
-
-      .med-tag {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.3rem;
-        border: 1px solid #c9ddd5;
-        border-radius: 999px;
-        background: #f6fdf9;
-        color: #255c50;
-        padding: 0.25rem 0.6rem;
-        font-size: 0.8rem;
-      }
-
-      .med-tag button {
-        border: 0;
-        background: transparent;
-        color: #497167;
-        font-size: 1rem;
-        cursor: pointer;
-        line-height: 1;
-      }
-
-      .actions {
-        display: grid;
-        gap: 0.65rem;
-        margin-top: 1rem;
-      }
-
-      .btn {
-        border: 0;
-        border-radius: 12px;
-        padding: 0.9rem;
-        font: inherit;
-        font-weight: 700;
-        cursor: pointer;
-        text-decoration: none;
-        text-align: center;
-      }
-
-      .btn-primary {
-        color: #ffffff;
-        background: linear-gradient(135deg, var(--brand-700), var(--brand-600));
-      }
-
-      .btn-secondary {
-        color: #1f5f53;
-        background: #f2fbf7;
-        border: 1px solid #bae4d7;
-      }
-
-      @media (max-width: 760px) {
-        .grid {
-          grid-template-columns: 1fr;
-        }
-      }
-    </style>
-  </head>
-
-  <body>
-    <div class="wrap">
-      <main class="card">
-        <header class="head">
-          <h1>회원가입</h1>
-          <p>약물·기저질환·알레르기 정보를 선택형으로 입력하면 보다 정확한 안전성 검증이 가능합니다.</p>
-        </header>
-
-        {% if error %}
-        <div class="error">{{ error }}</div>
-        {% endif %}
-
-        <form action="/auth/register/" method="post" id="registerForm">
-          {% csrf_token %}
-
-          <div class="grid">
-            <div class="field">
-              <label for="email">이메일</label>
-              <input type="email" name="email" id="email" placeholder="example@email.com" required />
-              <p id="email_error" class="error-text"></p>
-            </div>
-
-            <div class="field">
-              <label for="password">비밀번호</label>
-              <input type="password" name="password" id="password" placeholder="6자 이상 입력" required />
-            </div>
-
-            <div class="field full">
-              <label for="password_confirm">비밀번호 확인</label>
-              <input
-                type="password"
-                name="password_confirm"
-                id="password_confirm"
-                placeholder="비밀번호를 다시 입력"
-                required
-              />
-              <p id="pw_error" class="error-text">비밀번호가 서로 일치하지 않습니다.</p>
-            </div>
-
-            <div class="field full">
-              <label for="med_search">현재 복용 중인 약</label>
-              <div class="med-input-row">
-                <div class="autocomplete-wrapper">
-                  <input
-                    type="text"
-                    id="med_search"
-                    autocomplete="off"
-                    placeholder="약 이름으로 검색 후 선택"
-                  />
-                  <div id="med_dropdown" class="autocomplete-dropdown"></div>
-                </div>
-                <button type="button" id="btn_add_med" class="btn-add-med" disabled>추가</button>
-              </div>
-              <div id="med_tags" class="med-tags"></div>
-              <input type="hidden" name="current_medications" id="medications_hidden" value="" />
-              <p class="hint">검색에서 선택한 약품명만 저장됩니다.</p>
-            </div>
-
-            <div class="check full">
-              <label for="is_pregnant">
-                <input type="checkbox" name="is_pregnant" id="is_pregnant" />
-                현재 임신 또는 수유 중입니다.
-              </label>
-            </div>
-
-            <div class="check full">
-              <label for="has_disease">
-                <input
-                  type="checkbox"
-                  name="has_disease"
-                  id="has_disease"
-                  onchange="toggleInput('has_disease', 'disease_box')"
-                />
-                기저질환이 있습니다.
-              </label>
-              <div id="disease_box" class="hidden-input">
-                <div class="med-input-row">
-                  <div class="autocomplete-wrapper">
-                    <input
-                      type="text"
-                      id="disease_search"
-                      autocomplete="off"
-                      placeholder="질환명 또는 KCD 코드 검색"
-                    />
-                    <div id="disease_dropdown" class="autocomplete-dropdown"></div>
-                  </div>
-                  <button type="button" id="btn_add_disease" class="btn-add-med" disabled>추가</button>
-                </div>
-                <div id="disease_tags" class="med-tags"></div>
-                <input type="hidden" name="chronic_diseases" id="disease_hidden" value="" />
-                <p class="hint">선택한 항목은 `질병명 [코드]` 형식으로 저장됩니다.</p>
-              </div>
-            </div>
-
-            <div class="check full">
-              <label for="has_allergy">
-                <input
-                  type="checkbox"
-                  name="has_allergy"
-                  id="has_allergy"
-                  onchange="toggleInput('has_allergy', 'allergy_box')"
-                />
-                알레르기/주의 질환이 있습니다.
-              </label>
-              <div id="allergy_box" class="hidden-input">
-                <div class="med-input-row">
-                  <div class="autocomplete-wrapper">
-                    <input
-                      type="text"
-                      id="allergy_search"
-                      autocomplete="off"
-                      placeholder="알레르기 질환명 또는 KCD 코드 검색"
-                    />
-                    <div id="allergy_dropdown" class="autocomplete-dropdown"></div>
-                  </div>
-                  <button type="button" id="btn_add_allergy" class="btn-add-med" disabled>추가</button>
-                </div>
-                <div id="allergy_tags" class="med-tags"></div>
-                <input type="hidden" name="allergies" id="allergy_hidden" value="" />
-                <p class="hint">음식알러지가 있을땐 세 코드중 하나를 입력하세요: T78.1, T78.0, Z91.0</p>
-                <div id="food_allergy_detail_wrap" style="display: none; margin-top: 0.55rem">
-                  <input
-                    type="text"
-                    name="food_allergy_detail"
-                    id="food_allergy_detail"
-                    placeholder="상세정보: 땅콩, 복숭아"
-                  />
-                  <p class="hint">
-                    음식 알레르기는 `T78.1`, `T78.0`, `Z91.0` 중 하나를 선택한 뒤 상세정보에 음식명을 입력하세요.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="actions">
-            <button type="submit" class="btn btn-primary">회원가입 완료</button>
-            <a href="/auth/login/" class="btn btn-secondary">이미 계정이 있나요? 로그인</a>
-            <a href="/" class="btn btn-secondary">메인으로 돌아가기</a>
-          </div>
-        </form>
-      </main>
-    </div>
-
-    <script>
-      let diseasePicker = null;
-      let allergyPicker = null;
-
-      function toggleInput(checkboxId, targetId) {
-        const checkbox = document.getElementById(checkboxId);
-        const target = document.getElementById(targetId);
-        target.style.display = checkbox.checked ? "block" : "none";
-      }
-
-      const medSearch = document.getElementById("med_search");
-      const medDropdown = document.getElementById("med_dropdown");
-      const medTags = document.getElementById("med_tags");
-      const medHidden = document.getElementById("medications_hidden");
-      const btnAddMed = document.getElementById("btn_add_med");
-
-      let selectedMeds = [];
-      let selectedDrug = null;
-      let activeIdx = -1;
-      let debounceTimer = null;
-      let currentDrugOptions = [];
-
-      function syncHiddenInput() {
-        medHidden.value = selectedMeds.join(", ");
-      }
-
-      function renderMedTags() {
-        medTags.innerHTML = "";
-        selectedMeds.forEach((name, idx) => {
-          const tag = document.createElement("span");
-          tag.className = "med-tag";
-          tag.innerHTML = `${name}<button type="button" data-idx="${idx}" aria-label="remove">&times;</button>`;
-          medTags.appendChild(tag);
-        });
-
-        medTags.querySelectorAll("button").forEach((btn) => {
-          btn.addEventListener("click", () => {
-            selectedMeds.splice(Number(btn.dataset.idx), 1);
-            renderMedTags();
-            syncHiddenInput();
-          });
-        });
-      }
-
-      function hasMedication(name) {
-        const key = String(name || "").trim().toLowerCase();
-        return selectedMeds.some((item) => item.toLowerCase() === key);
-      }
-
-      function hideMedDropdown() {
-        medDropdown.classList.remove("show");
-        medDropdown.innerHTML = "";
-        activeIdx = -1;
-      }
-
-      function selectDrug(item) {
-        selectedDrug = item || null;
-        medSearch.value = (item && item.item_name) || "";
-        btnAddMed.disabled = !selectedDrug;
-        hideMedDropdown();
-      }
-
-      function addSelectedMedication() {
-        if (!selectedDrug || !selectedDrug.item_name) {
-          return;
-        }
-
-        const name = String(selectedDrug.item_name).trim();
-        if (name && !hasMedication(name)) {
-          selectedMeds.push(name);
-          renderMedTags();
-          syncHiddenInput();
-        }
-
-        selectedDrug = null;
-        currentDrugOptions = [];
-        medSearch.value = "";
-        btnAddMed.disabled = true;
-        hideMedDropdown();
-        medSearch.focus();
-      }
-
-      function showMedDropdown(items) {
-        medDropdown.innerHTML = "";
-        activeIdx = -1;
-
-        if (!Array.isArray(items) || items.length === 0) {
-          medDropdown.innerHTML = '<div class="autocomplete-empty">일치하는 약이 없습니다.</div>';
-          medDropdown.classList.add("show");
-          return;
-        }
-
-        items.forEach((item, idx) => {
-          const row = document.createElement("div");
-          row.className = "autocomplete-item";
-          row.dataset.index = idx;
-          row.innerHTML = `<span class="name">${item.item_name || ""}</span><span class="maker">${item.entp_name || ""}</span>`;
-          row.addEventListener("mousedown", (e) => {
-            e.preventDefault();
-            selectDrug(item);
-          });
-          medDropdown.appendChild(row);
-        });
-
-        medDropdown.classList.add("show");
-      }
-
-      function highlightMedItem(idx) {
-        const rows = medDropdown.querySelectorAll(".autocomplete-item");
-        rows.forEach((row) => row.classList.remove("active"));
-        if (idx >= 0 && idx < rows.length) {
-          rows[idx].classList.add("active");
-          rows[idx].scrollIntoView({ block: "nearest" });
-        }
-      }
-
-      btnAddMed.addEventListener("click", addSelectedMedication);
-
-      medSearch.addEventListener("input", () => {
-        const q = medSearch.value.trim();
-        selectedDrug = null;
-        btnAddMed.disabled = true;
-
-        clearTimeout(debounceTimer);
-        if (q.length < 1) {
-          currentDrugOptions = [];
-          hideMedDropdown();
-          return;
-        }
-
-        debounceTimer = setTimeout(() => {
-          fetch(`/drug/search/?q=${encodeURIComponent(q)}`)
-            .then((res) => res.json())
-            .then((items) => {
-              const list = Array.isArray(items) ? items : [];
-              const qLower = q.toLowerCase();
-              list.sort((a, b) => {
-                const aPos = (a.item_name || "").toLowerCase().indexOf(qLower);
-                const bPos = (b.item_name || "").toLowerCase().indexOf(qLower);
-                const aScore = aPos === -1 ? 9999 : aPos;
-                const bScore = bPos === -1 ? 9999 : bPos;
-                return aScore - bScore;
-              });
-              currentDrugOptions = list.slice(0, 20);
-              showMedDropdown(currentDrugOptions);
-            })
-            .catch(() => {
-              currentDrugOptions = [];
-              hideMedDropdown();
-            });
-        }, 250);
-      });
-
-      medSearch.addEventListener("keydown", (e) => {
-        const rows = medDropdown.querySelectorAll(".autocomplete-item");
-
-        if (e.key === "Enter") {
-          e.preventDefault();
-          if (rows.length > 0 && activeIdx >= 0 && currentDrugOptions[activeIdx]) {
-            selectDrug(currentDrugOptions[activeIdx]);
-            addSelectedMedication();
-          }
-          return;
-        }
-
-        if (!rows.length) {
-          return;
-        }
-
-        if (e.key === "ArrowDown") {
-          e.preventDefault();
-          activeIdx = Math.min(activeIdx + 1, rows.length - 1);
-          highlightMedItem(activeIdx);
-        } else if (e.key === "ArrowUp") {
-          e.preventDefault();
-          activeIdx = Math.max(activeIdx - 1, 0);
-          highlightMedItem(activeIdx);
-        } else if (e.key === "Escape") {
-          hideMedDropdown();
-        }
-      });
-
-      medSearch.addEventListener("blur", () => {
-        setTimeout(hideMedDropdown, 160);
-      });
-
-      function createKcdPicker(config) {
-        const searchInput = document.getElementById(config.searchId);
-        const dropdown = document.getElementById(config.dropdownId);
-        const addBtn = document.getElementById(config.addBtnId);
-        const tagsBox = document.getElementById(config.tagsId);
-        const hiddenInput = document.getElementById(config.hiddenId);
-        const FOOD_ALLERGY_PRESET = [
-          { kcd_code: "T78.1", kcd_name: "\uAE30\uD0C0 \uC74C\uC2DD\uBB3C \uC720\uD574\uBC18\uC751" },
-          { kcd_code: "T78.0", kcd_name: "\uC74C\uC2DD \uC720\uD574\uC791\uC6A9 \uC544\uB098\uD544\uB77D\uC2DC\uC2A4" },
-          { kcd_code: "Z91.0", kcd_name: "\uC2DD\uD488 \uC54C\uB808\uB974\uAE30 \uAC1C\uC778\uB825" },
-        ];
-        const FOOD_ALLERGY_HINTS = [
-          "\uC74C\uC2DD",
-          "\uC2DD\uD488",
-          "\uBA39",
-          "\uC12D\uCDE8",
-          "\uC54C\uB7EC\uC9C0",
-          "\uC54C\uB808\uB974\uAE30",
-          "\uB545\uCF69",
-          "\uBCF5\uC22D\uC544",
-          "\uACAC\uACFC",
-          "\uC0C8\uC6B0",
-          "\uAC8C",
-          "\uC6B0\uC720",
-          "\uACC4\uB780",
-          "\uBC00",
-          "\uCF69",
-          "peanut",
-          "peach",
-          "food",
-          "allergy",
-        ];
-
-        let selectedItems = [];
-        let pendingItem = null;
-        let active = -1;
-        let timer = null;
-        let options = [];
-
-        function toDisplay(item) {
-          return `${item.kcd_name} [${item.kcd_code}]`;
-        }
-
-        function syncHidden() {
-          hiddenInput.value = selectedItems.map((item) => toDisplay(item)).join(", ");
-          if (typeof config.onChange === "function") {
-            config.onChange(selectedItems.map((item) => ({ ...item })));
-          }
-        }
-
-        function hasCode(item) {
-          const code = String(item.kcd_code || "").toUpperCase();
-          return selectedItems.some((entry) => String(entry.kcd_code || "").toUpperCase() === code);
-        }
-
-        function renderTags() {
-          tagsBox.innerHTML = "";
-          selectedItems.forEach((item, idx) => {
-            const tag = document.createElement("span");
-            tag.className = "med-tag";
-            tag.innerHTML = `${toDisplay(item)}<button type="button" data-idx="${idx}" aria-label="remove">&times;</button>`;
-            tagsBox.appendChild(tag);
-          });
-
-          tagsBox.querySelectorAll("button").forEach((btn) => {
-            btn.addEventListener("click", () => {
-              selectedItems.splice(Number(btn.dataset.idx), 1);
-              renderTags();
-              syncHidden();
-            });
-          });
-        }
-
-        function hideDropdown() {
-          dropdown.classList.remove("show");
-          dropdown.innerHTML = "";
-          active = -1;
-        }
-
-        function selectItem(item) {
-          pendingItem = item || null;
-          searchInput.value = item ? toDisplay(item) : "";
-          addBtn.disabled = !pendingItem;
-          hideDropdown();
-        }
-
-        function addSelected() {
-          if (!pendingItem || !pendingItem.kcd_code || !pendingItem.kcd_name) {
-            return;
-          }
-
-          if (!hasCode(pendingItem)) {
-            selectedItems.push({
-              kcd_code: pendingItem.kcd_code,
-              kcd_name: pendingItem.kcd_name,
-            });
-            renderTags();
-            syncHidden();
-          }
-
-          pendingItem = null;
-          options = [];
-          searchInput.value = "";
-          addBtn.disabled = true;
-          hideDropdown();
-          searchInput.focus();
-        }
-
-        function shouldInjectFoodAllergyPreset(queryText) {
-          if (!config.foodAllergySuggest) {
-            return false;
-          }
-          const q = String(queryText || "").trim().toLowerCase();
-          if (!q) {
-            return false;
-          }
-          if (q.includes("t78") || q.includes("z91.0") || q.includes("z910")) {
-            return true;
-          }
-          return FOOD_ALLERGY_HINTS.some((token) => q.includes(token));
-        }
-
-        function mergeFoodAllergyPreset(items, queryText) {
-          if (!shouldInjectFoodAllergyPreset(queryText)) {
-            return Array.isArray(items) ? items : [];
-          }
-
-          const merged = [];
-          const seen = new Set();
-
-          FOOD_ALLERGY_PRESET.forEach((item) => {
-            const code = String(item.kcd_code || "").toUpperCase();
-            if (!code || seen.has(code)) {
-              return;
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>회원가입 - GDSI</title>
+
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Noto+Sans+KR:wght@400;500;700&display=swap"
+            rel="stylesheet"
+        />
+
+        <style>
+            :root {
+                --ink-900: #07211d;
+                --ink-700: #2b4a44;
+                --line: #d2e7df;
+                --brand-700: #006d5b;
+                --brand-600: #00806a;
+                --card: #ffffff;
             }
-            seen.add(code);
-            merged.push(item);
-          });
 
-          (Array.isArray(items) ? items : []).forEach((item) => {
-            const code = String((item && item.kcd_code) || "").toUpperCase();
-            if (!code || seen.has(code)) {
-              return;
+            * {
+                box-sizing: border-box;
             }
-            seen.add(code);
-            merged.push(item);
-          });
 
-          return merged;
-        }
+            body {
+                margin: 0;
+                min-height: 100vh;
+                font-family: "Sora", "Noto Sans KR", sans-serif;
+                color: var(--ink-900);
+                background:
+                    radial-gradient(
+                        900px 400px at 110% -10%,
+                        #d9fff3 0%,
+                        transparent 60%
+                    ),
+                    radial-gradient(
+                        820px 340px at -10% 110%,
+                        #ffe8cf 0%,
+                        transparent 60%
+                    ),
+                    #f4faf7;
+                padding: 1rem;
+            }
 
-        function showDropdown(items) {
-          dropdown.innerHTML = "";
-          active = -1;
+            .wrap {
+                width: min(760px, 100%);
+                margin: 1.2rem auto;
+            }
 
-          if (!Array.isArray(items) || items.length === 0) {
-            dropdown.innerHTML = '<div class="autocomplete-empty">일치하는 KCD 항목이 없습니다.</div>';
-            dropdown.classList.add("show");
-            return;
-          }
+            .card {
+                background: var(--card);
+                border: 1px solid var(--line);
+                border-radius: 24px;
+                box-shadow: 0 20px 45px rgba(4, 37, 32, 0.1);
+                padding: 1.5rem;
+            }
 
-          items.forEach((item, idx) => {
-            const row = document.createElement("div");
-            row.className = "autocomplete-item";
-            row.dataset.index = idx;
-            row.innerHTML = `<span class="name">${item.kcd_name || ""}</span><span class="maker">${item.kcd_code || ""}</span>`;
-            row.addEventListener("mousedown", (e) => {
-              e.preventDefault();
-              selectItem(item);
-            });
-            dropdown.appendChild(row);
-          });
+            .head {
+                margin-bottom: 1.1rem;
+            }
 
-          dropdown.classList.add("show");
-        }
+            .head h1 {
+                margin: 0;
+                font-size: 1.5rem;
+                letter-spacing: -0.02em;
+            }
 
-        function highlight(idx) {
-          const rows = dropdown.querySelectorAll(".autocomplete-item");
-          rows.forEach((row) => row.classList.remove("active"));
-          if (idx >= 0 && idx < rows.length) {
-            rows[idx].classList.add("active");
-            rows[idx].scrollIntoView({ block: "nearest" });
-          }
-        }
+            .head p {
+                margin: 0.45rem 0 0;
+                color: var(--ink-700);
+                font-size: 0.9rem;
+            }
 
-        addBtn.addEventListener("click", addSelected);
+            .error {
+                background: #fff1ef;
+                color: #b5402a;
+                border: 1px solid #ffd1c9;
+                border-radius: 12px;
+                padding: 0.75rem;
+                margin-bottom: 1rem;
+                font-size: 0.88rem;
+            }
 
-        searchInput.addEventListener("input", () => {
-          const q = searchInput.value.trim();
-          pendingItem = null;
-          addBtn.disabled = true;
+            .grid {
+                display: grid;
+                gap: 0.85rem;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
 
-          clearTimeout(timer);
-          if (q.length < 1) {
-            options = [];
-            hideDropdown();
-            return;
-          }
+            .full {
+                grid-column: 1 / -1;
+            }
 
-          timer = setTimeout(() => {
-            fetch(`/user/kcd/search/?q=${encodeURIComponent(q)}`)
-              .then((res) => res.json())
-              .then((items) => {
-                const list = Array.isArray(items) ? items : [];
-                const qLower = q.toLowerCase();
-                const qCode = q.replace(/\s+/g, "").toUpperCase();
-                list.sort((a, b) => {
-                  const aCode = String(a.kcd_code || "").toUpperCase();
-                  const bCode = String(b.kcd_code || "").toUpperCase();
-                  const aName = String(a.kcd_name || "").toLowerCase();
-                  const bName = String(b.kcd_name || "").toLowerCase();
+            .field label {
+                display: block;
+                font-size: 0.82rem;
+                font-weight: 700;
+                margin-bottom: 0.42rem;
+            }
 
-                  const score = (code, name) => {
-                    if (code === qCode) return 0;
-                    if (code.startsWith(qCode)) return 1;
-                    if (qCode && code.includes(qCode)) return 2;
-                    const pos = name.indexOf(qLower);
-                    return pos === -1 ? 9999 : 100 + pos;
-                  };
+            input,
+            textarea {
+                width: 100%;
+                border: 1px solid #c9ddd5;
+                border-radius: 12px;
+                padding: 0.82rem 0.9rem;
+                font: inherit;
+                outline: none;
+                background: #ffffff;
+            }
 
-                  return score(aCode, aName) - score(bCode, bName);
-                });
-                options = mergeFoodAllergyPreset(list, q).slice(0, 20);
-                showDropdown(options);
-              })
-              .catch(() => {
-                options = mergeFoodAllergyPreset([], q).slice(0, 20);
-                if (options.length > 0) {
-                  showDropdown(options);
-                  return;
+            input:focus,
+            textarea:focus {
+                border-color: #5ecfb5;
+                box-shadow: 0 0 0 4px rgba(0, 128, 106, 0.13);
+            }
+
+            textarea {
+                resize: vertical;
+                min-height: 96px;
+            }
+
+            .check {
+                border: 1px solid #d8e8e2;
+                border-radius: 12px;
+                background: #f8fdfa;
+                padding: 0.8rem;
+            }
+
+            .check label {
+                display: inline-flex;
+                align-items: center;
+                gap: 0.5rem;
+                font-size: 0.9rem;
+                margin: 0;
+            }
+
+            .check input[type="checkbox"] {
+                width: 18px;
+                height: 18px;
+            }
+
+            .hidden-input {
+                display: none;
+                margin-top: 0.55rem;
+            }
+
+            .error-text {
+                display: none;
+                margin-top: 0.35rem;
+                color: #b5402a;
+                font-size: 0.8rem;
+            }
+
+            .hint {
+                margin-top: 0.4rem;
+                font-size: 0.78rem;
+                color: #486860;
+            }
+
+            .med-input-row {
+                display: flex;
+                gap: 0.5rem;
+                align-items: stretch;
+            }
+
+            .autocomplete-wrapper {
+                position: relative;
+                flex: 1;
+            }
+
+            .autocomplete-dropdown {
+                display: none;
+                position: absolute;
+                left: 0;
+                right: 0;
+                top: calc(100% + 4px);
+                z-index: 50;
+                max-height: 220px;
+                overflow-y: auto;
+                background: #fff;
+                border: 1px solid #c9ddd5;
+                border-radius: 12px;
+                box-shadow: 0 14px 24px rgba(4, 37, 32, 0.12);
+            }
+
+            .autocomplete-dropdown.show {
+                display: block;
+            }
+
+            .autocomplete-item {
+                display: flex;
+                justify-content: space-between;
+                gap: 0.5rem;
+                padding: 0.66rem 0.8rem;
+                font-size: 0.86rem;
+                cursor: pointer;
+            }
+
+            .autocomplete-item:hover,
+            .autocomplete-item.active {
+                background: #f2fbf7;
+            }
+
+            .autocomplete-item .name {
+                font-weight: 700;
+            }
+
+            .autocomplete-item .maker {
+                color: #4f6f67;
+                font-size: 0.78rem;
+            }
+
+            .autocomplete-empty {
+                padding: 0.75rem;
+                text-align: center;
+                color: #4f6f67;
+                font-size: 0.8rem;
+            }
+
+            .btn-add-med {
+                border: 1px solid #b5ded2;
+                border-radius: 12px;
+                background: #f2fbf7;
+                padding: 0 1rem;
+                font-weight: 700;
+                cursor: pointer;
+            }
+
+            .btn-add-med:disabled {
+                opacity: 0.5;
+                cursor: not-allowed;
+            }
+
+            .med-tags {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 0.4rem;
+                margin-top: 0.5rem;
+            }
+
+            .med-tag {
+                display: inline-flex;
+                align-items: center;
+                gap: 0.3rem;
+                border: 1px solid #c9ddd5;
+                border-radius: 999px;
+                background: #f6fdf9;
+                color: #255c50;
+                padding: 0.25rem 0.6rem;
+                font-size: 0.8rem;
+            }
+
+            .med-tag button {
+                border: 0;
+                background: transparent;
+                color: #497167;
+                font-size: 1rem;
+                cursor: pointer;
+                line-height: 1;
+            }
+
+            .actions {
+                display: grid;
+                gap: 0.65rem;
+                margin-top: 1rem;
+            }
+
+            .btn {
+                border: 0;
+                border-radius: 12px;
+                padding: 0.9rem;
+                font: inherit;
+                font-weight: 700;
+                cursor: pointer;
+                text-decoration: none;
+                text-align: center;
+            }
+
+            .btn-primary {
+                color: #ffffff;
+                background: linear-gradient(
+                    135deg,
+                    var(--brand-700),
+                    var(--brand-600)
+                );
+            }
+
+            .btn-secondary {
+                color: #1f5f53;
+                background: #f2fbf7;
+                border: 1px solid #bae4d7;
+            }
+
+            @media (max-width: 760px) {
+                .grid {
+                    grid-template-columns: 1fr;
                 }
-                hideDropdown();
-              });
-          }, 250);
-        });
-
-        searchInput.addEventListener("keydown", (e) => {
-          const rows = dropdown.querySelectorAll(".autocomplete-item");
-
-          if (e.key === "Enter") {
-            e.preventDefault();
-            if (rows.length > 0 && active >= 0 && options[active]) {
-              selectItem(options[active]);
-              addSelected();
             }
-            return;
-          }
+        </style>
+    </head>
 
-          if (!rows.length) {
-            return;
-          }
+    <body>
+        <div class="wrap">
+            <main class="card">
+                <header class="head">
+                    <h1>회원가입</h1>
+                    <p>
+                        약물·기저질환·알레르기 정보를 선택형으로 입력하면 보다
+                        정확한 안전성 검증이 가능합니다.
+                    </p>
+                </header>
 
-          if (e.key === "ArrowDown") {
-            e.preventDefault();
-            active = Math.min(active + 1, rows.length - 1);
-            highlight(active);
-          } else if (e.key === "ArrowUp") {
-            e.preventDefault();
-            active = Math.max(active - 1, 0);
-            highlight(active);
-          } else if (e.key === "Escape") {
-            hideDropdown();
-          }
-        });
+                {% if error %}
+                <div class="error">{{ error }}</div>
+                {% endif %}
 
-        searchInput.addEventListener("blur", () => {
-          setTimeout(hideDropdown, 160);
-        });
+                <form action="/auth/register/" method="post" id="registerForm">
+                    {% csrf_token %}
 
-        return {
-          clear() {
-            selectedItems = [];
-            pendingItem = null;
-            options = [];
-            searchInput.value = "";
-            addBtn.disabled = true;
-            renderTags();
-            syncHidden();
-            hideDropdown();
-          },
-          getSelectedItems() {
-            return selectedItems.map((item) => ({ ...item }));
-          },
-        };
-      }
+                    <div class="grid">
+                        <div class="field">
+                            <label for="email">이메일</label>
+                            <input
+                                type="email"
+                                name="email"
+                                id="email"
+                                placeholder="example@email.com"
+                                required
+                            />
+                            <p id="email_error" class="error-text"></p>
+                        </div>
 
-      diseasePicker = createKcdPicker({
-        searchId: "disease_search",
-        dropdownId: "disease_dropdown",
-        addBtnId: "btn_add_disease",
-        tagsId: "disease_tags",
-        hiddenId: "disease_hidden",
-      });
+                        <div class="field">
+                            <label for="password">비밀번호</label>
+                            <input
+                                type="password"
+                                name="password"
+                                id="password"
+                                placeholder="6자 이상 입력"
+                                required
+                            />
+                        </div>
 
-      allergyPicker = createKcdPicker({
-        searchId: "allergy_search",
-        dropdownId: "allergy_dropdown",
-        addBtnId: "btn_add_allergy",
-        tagsId: "allergy_tags",
-        hiddenId: "allergy_hidden",
-        foodAllergySuggest: true,
-        onChange: syncFoodDetailVisibility,
-      });
+                        <div class="field full">
+                            <label for="password_confirm">비밀번호 확인</label>
+                            <input
+                                type="password"
+                                name="password_confirm"
+                                id="password_confirm"
+                                placeholder="비밀번호를 다시 입력"
+                                required
+                            />
+                            <p id="pw_error" class="error-text">
+                                비밀번호가 서로 일치하지 않습니다.
+                            </p>
+                        </div>
 
-      const hasDisease = document.getElementById("has_disease");
-      const hasAllergy = document.getElementById("has_allergy");
-      const foodAllergyDetailInput = document.getElementById("food_allergy_detail");
-      const foodAllergyDetailWrap = document.getElementById("food_allergy_detail_wrap");
-      const allergyHidden = document.getElementById("allergy_hidden");
+                        <div class="field full">
+                            <label for="med_search">현재 복용 중인 약</label>
+                            <div class="med-input-row">
+                                <div class="autocomplete-wrapper">
+                                    <input
+                                        type="text"
+                                        id="med_search"
+                                        autocomplete="off"
+                                        placeholder="약 이름으로 검색 후 선택"
+                                    />
+                                    <div
+                                        id="med_dropdown"
+                                        class="autocomplete-dropdown"
+                                    ></div>
+                                </div>
+                                <button
+                                    type="button"
+                                    id="btn_add_med"
+                                    class="btn-add-med"
+                                    disabled
+                                >
+                                    추가
+                                </button>
+                            </div>
+                            <div id="med_tags" class="med-tags"></div>
+                            <input
+                                type="hidden"
+                                name="current_medications"
+                                id="medications_hidden"
+                                value=""
+                            />
+                            <p class="hint">
+                                검색에서 선택한 후
+                                <strong>추가 버튼을 눌러야</strong> 해당 약
+                                정보가 저장됩니다.
+                            </p>
+                        </div>
 
-      function hasFoodDetailCodeSelected(selectedItems) {
-        if (Array.isArray(selectedItems) && selectedItems.length > 0) {
-          return selectedItems.some((item) =>
-            ["T78.1", "T78.0", "Z91.0"].includes(String(item.kcd_code || "").toUpperCase())
-          );
-        }
+                        <div class="check full">
+                            <label for="is_pregnant">
+                                <input
+                                    type="checkbox"
+                                    name="is_pregnant"
+                                    id="is_pregnant"
+                                />
+                                현재 임신 또는 수유 중입니다.
+                            </label>
+                        </div>
 
-        const text = String((allergyHidden && allergyHidden.value) || "").toUpperCase();
-        if (/T78\.1|T78\.0|Z91\.0/.test(text)) {
-          return true;
-        }
+                        <div class="check full">
+                            <label for="has_disease">
+                                <input
+                                    type="checkbox"
+                                    name="has_disease"
+                                    id="has_disease"
+                                    onchange="
+                                        toggleInput(
+                                            'has_disease',
+                                            'disease_box',
+                                        )
+                                    "
+                                />
+                                기저질환이 있습니다.
+                            </label>
+                            <div id="disease_box" class="hidden-input">
+                                <div class="med-input-row">
+                                    <div class="autocomplete-wrapper">
+                                        <input
+                                            type="text"
+                                            id="disease_search"
+                                            autocomplete="off"
+                                            placeholder="질환명 또는 KCD 코드 검색"
+                                        />
+                                        <div
+                                            id="disease_dropdown"
+                                            class="autocomplete-dropdown"
+                                        ></div>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        id="btn_add_disease"
+                                        class="btn-add-med"
+                                        disabled
+                                    >
+                                        추가
+                                    </button>
+                                </div>
+                                <div id="disease_tags" class="med-tags"></div>
+                                <input
+                                    type="hidden"
+                                    name="chronic_diseases"
+                                    id="disease_hidden"
+                                    value=""
+                                />
+                                <p class="hint">
+                                    선택한 후
+                                    <strong>추가 버튼을 눌러야</strong> 해당
+                                    기저질환 정보가 저장됩니다.
+                                </p>
+                            </div>
+                        </div>
 
-        const tagsText = String(
-          (document.getElementById("allergy_tags") && document.getElementById("allergy_tags").textContent) || ""
-        ).toUpperCase();
-        return /T78\.1|T78\.0|Z91\.0/.test(tagsText);
-      }
+                        <div class="check full">
+                            <label for="has_allergy">
+                                <input
+                                    type="checkbox"
+                                    name="has_allergy"
+                                    id="has_allergy"
+                                    onchange="
+                                        toggleInput(
+                                            'has_allergy',
+                                            'allergy_box',
+                                        )
+                                    "
+                                />
+                                알레르기/주의 질환이 있습니다.
+                            </label>
+                            <div id="allergy_box" class="hidden-input">
+                                <div class="med-input-row">
+                                    <div class="autocomplete-wrapper">
+                                        <input
+                                            type="text"
+                                            id="allergy_search"
+                                            autocomplete="off"
+                                            placeholder="알레르기 질환명 또는 KCD 코드 검색"
+                                        />
+                                        <div
+                                            id="allergy_dropdown"
+                                            class="autocomplete-dropdown"
+                                        ></div>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        id="btn_add_allergy"
+                                        class="btn-add-med"
+                                        disabled
+                                    >
+                                        추가
+                                    </button>
+                                </div>
+                                <div id="allergy_tags" class="med-tags"></div>
+                                <input
+                                    type="hidden"
+                                    name="allergies"
+                                    id="allergy_hidden"
+                                    value=""
+                                />
+                                <p class="hint">
+                                    선택한 후
+                                    <strong>추가 버튼을 눌러야</strong> 해당
+                                    알레르기 정보가 저장됩니다. 음식 알레르기는
+                                    T78.1, T78.0, Z91.0 중 하나를 검색하세요.
+                                </p>
+                                <div
+                                    id="food_allergy_detail_wrap"
+                                    style="display: none; margin-top: 0.55rem"
+                                >
+                                    <input
+                                        type="text"
+                                        name="food_allergy_detail"
+                                        id="food_allergy_detail"
+                                        placeholder="상세정보: 땅콩, 복숭아"
+                                    />
+                                    <p class="hint">
+                                        음식 알레르기는 `T78.1`, `T78.0`,
+                                        `Z91.0` 중 하나를 선택한 뒤 상세정보에
+                                        음식명을 입력하세요.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
 
-      function syncFoodDetailVisibility(selectedItems) {
-        if (!foodAllergyDetailWrap || !foodAllergyDetailInput) {
-          return;
-        }
-        const allergyCheckbox = document.getElementById("has_allergy");
-        const visible =
-          Boolean(allergyCheckbox && allergyCheckbox.checked) &&
-          hasFoodDetailCodeSelected(selectedItems);
-        foodAllergyDetailWrap.style.display = visible ? "block" : "none";
-        if (!visible) {
-          foodAllergyDetailInput.value = "";
-        }
-      }
-      hasDisease.addEventListener("change", () => {
-        if (!hasDisease.checked && diseasePicker) {
-          diseasePicker.clear();
-        }
-      });
-      hasAllergy.addEventListener("change", () => {
-        if (!hasAllergy.checked && allergyPicker) {
-          allergyPicker.clear();
-        }
-        syncFoodDetailVisibility(allergyPicker ? allergyPicker.getSelectedItems() : []);
-      });
+                    <div class="actions">
+                        <button type="submit" class="btn btn-primary">
+                            회원가입 완료
+                        </button>
+                        <a href="/auth/login/" class="btn btn-secondary"
+                            >이미 계정이 있나요? 로그인</a
+                        >
+                        <a href="/" class="btn btn-secondary"
+                            >메인으로 돌아가기</a
+                        >
+                    </div>
+                </form>
+            </main>
+        </div>
 
-      document.getElementById("registerForm").onsubmit = function (e) {
-        e.preventDefault();
+        <script>
+            let diseasePicker = null;
+            let allergyPicker = null;
 
-        const pw = document.getElementById("password").value;
-        const pwConfirm = document.getElementById("password_confirm").value;
-        const pwErrorText = document.getElementById("pw_error");
-        const emailErrorText = document.getElementById("email_error");
-
-        pwErrorText.style.display = "none";
-        emailErrorText.style.display = "none";
-
-        if (pw !== pwConfirm) {
-          pwErrorText.style.display = "block";
-          document.getElementById("password_confirm").focus();
-          return false;
-        }
-
-        syncHiddenInput();
-
-        if (!hasDisease.checked) {
-          document.getElementById("disease_hidden").value = "";
-        }
-        if (!hasAllergy.checked) {
-          document.getElementById("allergy_hidden").value = "";
-          syncFoodDetailVisibility([]);
-        }
-
-        const formData = new FormData(this);
-        const csrfToken = document.querySelector("[name=csrfmiddlewaretoken]").value;
-
-        fetch(this.action, {
-          method: "POST",
-          body: formData,
-          headers: {
-            "X-Requested-With": "XMLHttpRequest",
-            "X-CSRFToken": csrfToken,
-          },
-        })
-          .then((response) => response.json().then((data) => ({ status: response.status, body: data })))
-          .then((result) => {
-            const data = result.body;
-            if (result.status === 200 && data.status === "success") {
-              window.location.href = data.redirect;
-            } else if (data.code === "user_exists") {
-              emailErrorText.textContent = data.message;
-              emailErrorText.style.display = "block";
-              document.getElementById("email").focus();
-            } else {
-              alert(data.message || "회원가입에 실패했습니다.");
+            function toggleInput(checkboxId, targetId) {
+                const checkbox = document.getElementById(checkboxId);
+                const target = document.getElementById(targetId);
+                target.style.display = checkbox.checked ? "block" : "none";
             }
-          })
-          .catch((error) => {
-            console.error("Error:", error);
-            alert("서버 통신 중 오류가 발생했습니다.");
-          });
 
-        return false;
-      };
+            const medSearch = document.getElementById("med_search");
+            const medDropdown = document.getElementById("med_dropdown");
+            const medTags = document.getElementById("med_tags");
+            const medHidden = document.getElementById("medications_hidden");
+            const btnAddMed = document.getElementById("btn_add_med");
 
-      syncFoodDetailVisibility(allergyPicker ? allergyPicker.getSelectedItems() : []);
-    </script>
-  </body>
+            let selectedMeds = [];
+            let selectedDrug = null;
+            let activeIdx = -1;
+            let debounceTimer = null;
+            let currentDrugOptions = [];
+
+            function syncHiddenInput() {
+                medHidden.value = selectedMeds.join(", ");
+            }
+
+            function renderMedTags() {
+                medTags.innerHTML = "";
+                selectedMeds.forEach((name, idx) => {
+                    const tag = document.createElement("span");
+                    tag.className = "med-tag";
+                    tag.innerHTML = `${name}<button type="button" data-idx="${idx}" aria-label="remove">&times;</button>`;
+                    medTags.appendChild(tag);
+                });
+
+                medTags.querySelectorAll("button").forEach((btn) => {
+                    btn.addEventListener("click", () => {
+                        selectedMeds.splice(Number(btn.dataset.idx), 1);
+                        renderMedTags();
+                        syncHiddenInput();
+                    });
+                });
+            }
+
+            function hasMedication(name) {
+                const key = String(name || "")
+                    .trim()
+                    .toLowerCase();
+                return selectedMeds.some((item) => item.toLowerCase() === key);
+            }
+
+            function hideMedDropdown() {
+                medDropdown.classList.remove("show");
+                medDropdown.innerHTML = "";
+                activeIdx = -1;
+            }
+
+            function selectDrug(item) {
+                selectedDrug = item || null;
+                medSearch.value = (item && item.item_name) || "";
+                btnAddMed.disabled = !selectedDrug;
+                hideMedDropdown();
+            }
+
+            function addSelectedMedication() {
+                if (!selectedDrug || !selectedDrug.item_name) {
+                    return;
+                }
+
+                const name = String(selectedDrug.item_name).trim();
+                if (name && !hasMedication(name)) {
+                    selectedMeds.push(name);
+                    renderMedTags();
+                    syncHiddenInput();
+                }
+
+                selectedDrug = null;
+                currentDrugOptions = [];
+                medSearch.value = "";
+                btnAddMed.disabled = true;
+                hideMedDropdown();
+                medSearch.focus();
+            }
+
+            function showMedDropdown(items) {
+                medDropdown.innerHTML = "";
+                activeIdx = -1;
+
+                if (!Array.isArray(items) || items.length === 0) {
+                    medDropdown.innerHTML =
+                        '<div class="autocomplete-empty">일치하는 약이 없습니다.</div>';
+                    medDropdown.classList.add("show");
+                    return;
+                }
+
+                items.forEach((item, idx) => {
+                    const row = document.createElement("div");
+                    row.className = "autocomplete-item";
+                    row.dataset.index = idx;
+                    row.innerHTML = `<span class="name">${item.item_name || ""}</span><span class="maker">${item.entp_name || ""}</span>`;
+                    row.addEventListener("mousedown", (e) => {
+                        e.preventDefault();
+                        selectDrug(item);
+                    });
+                    medDropdown.appendChild(row);
+                });
+
+                medDropdown.classList.add("show");
+            }
+
+            function highlightMedItem(idx) {
+                const rows = medDropdown.querySelectorAll(".autocomplete-item");
+                rows.forEach((row) => row.classList.remove("active"));
+                if (idx >= 0 && idx < rows.length) {
+                    rows[idx].classList.add("active");
+                    rows[idx].scrollIntoView({ block: "nearest" });
+                }
+            }
+
+            btnAddMed.addEventListener("click", addSelectedMedication);
+
+            medSearch.addEventListener("input", () => {
+                const q = medSearch.value.trim();
+                selectedDrug = null;
+                btnAddMed.disabled = true;
+
+                clearTimeout(debounceTimer);
+                if (q.length < 1) {
+                    currentDrugOptions = [];
+                    hideMedDropdown();
+                    return;
+                }
+
+                debounceTimer = setTimeout(() => {
+                    fetch(`/drug/search/?q=${encodeURIComponent(q)}`)
+                        .then((res) => res.json())
+                        .then((items) => {
+                            const list = Array.isArray(items) ? items : [];
+                            const qLower = q.toLowerCase();
+                            list.sort((a, b) => {
+                                const aPos = (a.item_name || "")
+                                    .toLowerCase()
+                                    .indexOf(qLower);
+                                const bPos = (b.item_name || "")
+                                    .toLowerCase()
+                                    .indexOf(qLower);
+                                const aScore = aPos === -1 ? 9999 : aPos;
+                                const bScore = bPos === -1 ? 9999 : bPos;
+                                return aScore - bScore;
+                            });
+                            currentDrugOptions = list.slice(0, 20);
+                            showMedDropdown(currentDrugOptions);
+                        })
+                        .catch(() => {
+                            currentDrugOptions = [];
+                            hideMedDropdown();
+                        });
+                }, 250);
+            });
+
+            medSearch.addEventListener("keydown", (e) => {
+                const rows = medDropdown.querySelectorAll(".autocomplete-item");
+
+                if (e.key === "Enter") {
+                    e.preventDefault();
+                    if (
+                        rows.length > 0 &&
+                        activeIdx >= 0 &&
+                        currentDrugOptions[activeIdx]
+                    ) {
+                        selectDrug(currentDrugOptions[activeIdx]);
+                        addSelectedMedication();
+                    }
+                    return;
+                }
+
+                if (!rows.length) {
+                    return;
+                }
+
+                if (e.key === "ArrowDown") {
+                    e.preventDefault();
+                    activeIdx = Math.min(activeIdx + 1, rows.length - 1);
+                    highlightMedItem(activeIdx);
+                } else if (e.key === "ArrowUp") {
+                    e.preventDefault();
+                    activeIdx = Math.max(activeIdx - 1, 0);
+                    highlightMedItem(activeIdx);
+                } else if (e.key === "Escape") {
+                    hideMedDropdown();
+                }
+            });
+
+            medSearch.addEventListener("blur", () => {
+                setTimeout(hideMedDropdown, 160);
+            });
+
+            function createKcdPicker(config) {
+                const searchInput = document.getElementById(config.searchId);
+                const dropdown = document.getElementById(config.dropdownId);
+                const addBtn = document.getElementById(config.addBtnId);
+                const tagsBox = document.getElementById(config.tagsId);
+                const hiddenInput = document.getElementById(config.hiddenId);
+                const FOOD_ALLERGY_PRESET = [
+                    {
+                        kcd_code: "T78.1",
+                        kcd_name:
+                            "\uAE30\uD0C0 \uC74C\uC2DD\uBB3C \uC720\uD574\uBC18\uC751",
+                    },
+                    {
+                        kcd_code: "T78.0",
+                        kcd_name:
+                            "\uC74C\uC2DD \uC720\uD574\uC791\uC6A9 \uC544\uB098\uD544\uB77D\uC2DC\uC2A4",
+                    },
+                    {
+                        kcd_code: "Z91.0",
+                        kcd_name:
+                            "\uC2DD\uD488 \uC54C\uB808\uB974\uAE30 \uAC1C\uC778\uB825",
+                    },
+                ];
+                const FOOD_ALLERGY_HINTS = [
+                    "\uC74C\uC2DD",
+                    "\uC2DD\uD488",
+                    "\uBA39",
+                    "\uC12D\uCDE8",
+                    "\uC54C\uB7EC\uC9C0",
+                    "\uC54C\uB808\uB974\uAE30",
+                    "\uB545\uCF69",
+                    "\uBCF5\uC22D\uC544",
+                    "\uACAC\uACFC",
+                    "\uC0C8\uC6B0",
+                    "\uAC8C",
+                    "\uC6B0\uC720",
+                    "\uACC4\uB780",
+                    "\uBC00",
+                    "\uCF69",
+                    "peanut",
+                    "peach",
+                    "food",
+                    "allergy",
+                ];
+
+                let selectedItems = [];
+                let pendingItem = null;
+                let active = -1;
+                let timer = null;
+                let options = [];
+
+                function toDisplay(item) {
+                    return `${item.kcd_name} [${item.kcd_code}]`;
+                }
+
+                function syncHidden() {
+                    hiddenInput.value = selectedItems
+                        .map((item) => toDisplay(item))
+                        .join(", ");
+                    if (typeof config.onChange === "function") {
+                        config.onChange(
+                            selectedItems.map((item) => ({ ...item })),
+                        );
+                    }
+                }
+
+                function hasCode(item) {
+                    const code = String(item.kcd_code || "").toUpperCase();
+                    return selectedItems.some(
+                        (entry) =>
+                            String(entry.kcd_code || "").toUpperCase() === code,
+                    );
+                }
+
+                function renderTags() {
+                    tagsBox.innerHTML = "";
+                    selectedItems.forEach((item, idx) => {
+                        const tag = document.createElement("span");
+                        tag.className = "med-tag";
+                        tag.innerHTML = `${toDisplay(item)}<button type="button" data-idx="${idx}" aria-label="remove">&times;</button>`;
+                        tagsBox.appendChild(tag);
+                    });
+
+                    tagsBox.querySelectorAll("button").forEach((btn) => {
+                        btn.addEventListener("click", () => {
+                            selectedItems.splice(Number(btn.dataset.idx), 1);
+                            renderTags();
+                            syncHidden();
+                        });
+                    });
+                }
+
+                function hideDropdown() {
+                    dropdown.classList.remove("show");
+                    dropdown.innerHTML = "";
+                    active = -1;
+                }
+
+                function selectItem(item) {
+                    pendingItem = item || null;
+                    searchInput.value = item ? toDisplay(item) : "";
+                    addBtn.disabled = !pendingItem;
+                    hideDropdown();
+                }
+
+                function addSelected() {
+                    if (
+                        !pendingItem ||
+                        !pendingItem.kcd_code ||
+                        !pendingItem.kcd_name
+                    ) {
+                        return;
+                    }
+
+                    if (!hasCode(pendingItem)) {
+                        selectedItems.push({
+                            kcd_code: pendingItem.kcd_code,
+                            kcd_name: pendingItem.kcd_name,
+                        });
+                        renderTags();
+                        syncHidden();
+                    }
+
+                    pendingItem = null;
+                    options = [];
+                    searchInput.value = "";
+                    addBtn.disabled = true;
+                    hideDropdown();
+                    searchInput.focus();
+                }
+
+                function shouldInjectFoodAllergyPreset(queryText) {
+                    if (!config.foodAllergySuggest) {
+                        return false;
+                    }
+                    const q = String(queryText || "")
+                        .trim()
+                        .toLowerCase();
+                    if (!q) {
+                        return false;
+                    }
+                    if (
+                        q.includes("t78") ||
+                        q.includes("z91.0") ||
+                        q.includes("z910")
+                    ) {
+                        return true;
+                    }
+                    return FOOD_ALLERGY_HINTS.some((token) =>
+                        q.includes(token),
+                    );
+                }
+
+                function mergeFoodAllergyPreset(items, queryText) {
+                    if (!shouldInjectFoodAllergyPreset(queryText)) {
+                        return Array.isArray(items) ? items : [];
+                    }
+
+                    const merged = [];
+                    const seen = new Set();
+
+                    FOOD_ALLERGY_PRESET.forEach((item) => {
+                        const code = String(item.kcd_code || "").toUpperCase();
+                        if (!code || seen.has(code)) {
+                            return;
+                        }
+                        seen.add(code);
+                        merged.push(item);
+                    });
+
+                    (Array.isArray(items) ? items : []).forEach((item) => {
+                        const code = String(
+                            (item && item.kcd_code) || "",
+                        ).toUpperCase();
+                        if (!code || seen.has(code)) {
+                            return;
+                        }
+                        seen.add(code);
+                        merged.push(item);
+                    });
+
+                    return merged;
+                }
+
+                function showDropdown(items) {
+                    dropdown.innerHTML = "";
+                    active = -1;
+
+                    if (!Array.isArray(items) || items.length === 0) {
+                        dropdown.innerHTML =
+                            '<div class="autocomplete-empty">일치하는 KCD 항목이 없습니다.</div>';
+                        dropdown.classList.add("show");
+                        return;
+                    }
+
+                    items.forEach((item, idx) => {
+                        const row = document.createElement("div");
+                        row.className = "autocomplete-item";
+                        row.dataset.index = idx;
+                        row.innerHTML = `<span class="name">${item.kcd_name || ""}</span><span class="maker">${item.kcd_code || ""}</span>`;
+                        row.addEventListener("mousedown", (e) => {
+                            e.preventDefault();
+                            selectItem(item);
+                        });
+                        dropdown.appendChild(row);
+                    });
+
+                    dropdown.classList.add("show");
+                }
+
+                function highlight(idx) {
+                    const rows =
+                        dropdown.querySelectorAll(".autocomplete-item");
+                    rows.forEach((row) => row.classList.remove("active"));
+                    if (idx >= 0 && idx < rows.length) {
+                        rows[idx].classList.add("active");
+                        rows[idx].scrollIntoView({ block: "nearest" });
+                    }
+                }
+
+                addBtn.addEventListener("click", addSelected);
+
+                searchInput.addEventListener("input", () => {
+                    const q = searchInput.value.trim();
+                    pendingItem = null;
+                    addBtn.disabled = true;
+
+                    clearTimeout(timer);
+                    if (q.length < 1) {
+                        options = [];
+                        hideDropdown();
+                        return;
+                    }
+
+                    timer = setTimeout(() => {
+                        fetch(`/user/kcd/search/?q=${encodeURIComponent(q)}`)
+                            .then((res) => res.json())
+                            .then((items) => {
+                                const list = Array.isArray(items) ? items : [];
+                                const qLower = q.toLowerCase();
+                                const qCode = q
+                                    .replace(/\s+/g, "")
+                                    .toUpperCase();
+                                list.sort((a, b) => {
+                                    const aCode = String(
+                                        a.kcd_code || "",
+                                    ).toUpperCase();
+                                    const bCode = String(
+                                        b.kcd_code || "",
+                                    ).toUpperCase();
+                                    const aName = String(
+                                        a.kcd_name || "",
+                                    ).toLowerCase();
+                                    const bName = String(
+                                        b.kcd_name || "",
+                                    ).toLowerCase();
+
+                                    const score = (code, name) => {
+                                        if (code === qCode) return 0;
+                                        if (code.startsWith(qCode)) return 1;
+                                        if (qCode && code.includes(qCode))
+                                            return 2;
+                                        const pos = name.indexOf(qLower);
+                                        return pos === -1 ? 9999 : 100 + pos;
+                                    };
+
+                                    return (
+                                        score(aCode, aName) -
+                                        score(bCode, bName)
+                                    );
+                                });
+                                options = mergeFoodAllergyPreset(list, q).slice(
+                                    0,
+                                    20,
+                                );
+                                showDropdown(options);
+                            })
+                            .catch(() => {
+                                options = mergeFoodAllergyPreset([], q).slice(
+                                    0,
+                                    20,
+                                );
+                                if (options.length > 0) {
+                                    showDropdown(options);
+                                    return;
+                                }
+                                hideDropdown();
+                            });
+                    }, 250);
+                });
+
+                searchInput.addEventListener("keydown", (e) => {
+                    const rows =
+                        dropdown.querySelectorAll(".autocomplete-item");
+
+                    if (e.key === "Enter") {
+                        e.preventDefault();
+                        if (rows.length > 0 && active >= 0 && options[active]) {
+                            selectItem(options[active]);
+                            addSelected();
+                        }
+                        return;
+                    }
+
+                    if (!rows.length) {
+                        return;
+                    }
+
+                    if (e.key === "ArrowDown") {
+                        e.preventDefault();
+                        active = Math.min(active + 1, rows.length - 1);
+                        highlight(active);
+                    } else if (e.key === "ArrowUp") {
+                        e.preventDefault();
+                        active = Math.max(active - 1, 0);
+                        highlight(active);
+                    } else if (e.key === "Escape") {
+                        hideDropdown();
+                    }
+                });
+
+                searchInput.addEventListener("blur", () => {
+                    setTimeout(hideDropdown, 160);
+                });
+
+                return {
+                    clear() {
+                        selectedItems = [];
+                        pendingItem = null;
+                        options = [];
+                        searchInput.value = "";
+                        addBtn.disabled = true;
+                        renderTags();
+                        syncHidden();
+                        hideDropdown();
+                    },
+                    getSelectedItems() {
+                        return selectedItems.map((item) => ({ ...item }));
+                    },
+                };
+            }
+
+            diseasePicker = createKcdPicker({
+                searchId: "disease_search",
+                dropdownId: "disease_dropdown",
+                addBtnId: "btn_add_disease",
+                tagsId: "disease_tags",
+                hiddenId: "disease_hidden",
+            });
+
+            allergyPicker = createKcdPicker({
+                searchId: "allergy_search",
+                dropdownId: "allergy_dropdown",
+                addBtnId: "btn_add_allergy",
+                tagsId: "allergy_tags",
+                hiddenId: "allergy_hidden",
+                foodAllergySuggest: true,
+                onChange: syncFoodDetailVisibility,
+            });
+
+            const hasDisease = document.getElementById("has_disease");
+            const hasAllergy = document.getElementById("has_allergy");
+            const foodAllergyDetailInput = document.getElementById(
+                "food_allergy_detail",
+            );
+            const foodAllergyDetailWrap = document.getElementById(
+                "food_allergy_detail_wrap",
+            );
+            const allergyHidden = document.getElementById("allergy_hidden");
+
+            function hasFoodDetailCodeSelected(selectedItems) {
+                if (Array.isArray(selectedItems) && selectedItems.length > 0) {
+                    return selectedItems.some((item) =>
+                        ["T78.1", "T78.0", "Z91.0"].includes(
+                            String(item.kcd_code || "").toUpperCase(),
+                        ),
+                    );
+                }
+
+                const text = String(
+                    (allergyHidden && allergyHidden.value) || "",
+                ).toUpperCase();
+                if (/T78\.1|T78\.0|Z91\.0/.test(text)) {
+                    return true;
+                }
+
+                const tagsText = String(
+                    (document.getElementById("allergy_tags") &&
+                        document.getElementById("allergy_tags").textContent) ||
+                        "",
+                ).toUpperCase();
+                return /T78\.1|T78\.0|Z91\.0/.test(tagsText);
+            }
+
+            function syncFoodDetailVisibility(selectedItems) {
+                if (!foodAllergyDetailWrap || !foodAllergyDetailInput) {
+                    return;
+                }
+                const allergyCheckbox = document.getElementById("has_allergy");
+                const visible =
+                    Boolean(allergyCheckbox && allergyCheckbox.checked) &&
+                    hasFoodDetailCodeSelected(selectedItems);
+                foodAllergyDetailWrap.style.display = visible
+                    ? "block"
+                    : "none";
+                if (!visible) {
+                    foodAllergyDetailInput.value = "";
+                }
+            }
+            hasDisease.addEventListener("change", () => {
+                if (!hasDisease.checked && diseasePicker) {
+                    diseasePicker.clear();
+                }
+            });
+            hasAllergy.addEventListener("change", () => {
+                if (!hasAllergy.checked && allergyPicker) {
+                    allergyPicker.clear();
+                }
+                syncFoodDetailVisibility(
+                    allergyPicker ? allergyPicker.getSelectedItems() : [],
+                );
+            });
+
+            document.getElementById("registerForm").onsubmit = function (e) {
+                e.preventDefault();
+
+                const pw = document.getElementById("password").value;
+                const pwConfirm =
+                    document.getElementById("password_confirm").value;
+                const pwErrorText = document.getElementById("pw_error");
+                const emailErrorText = document.getElementById("email_error");
+
+                pwErrorText.style.display = "none";
+                emailErrorText.style.display = "none";
+
+                if (pw !== pwConfirm) {
+                    pwErrorText.style.display = "block";
+                    document.getElementById("password_confirm").focus();
+                    return false;
+                }
+
+                syncHiddenInput();
+
+                if (!hasDisease.checked) {
+                    document.getElementById("disease_hidden").value = "";
+                }
+                if (!hasAllergy.checked) {
+                    document.getElementById("allergy_hidden").value = "";
+                    syncFoodDetailVisibility([]);
+                }
+
+                const formData = new FormData(this);
+                const csrfToken = document.querySelector(
+                    "[name=csrfmiddlewaretoken]",
+                ).value;
+
+                fetch(this.action, {
+                    method: "POST",
+                    body: formData,
+                    headers: {
+                        "X-Requested-With": "XMLHttpRequest",
+                        "X-CSRFToken": csrfToken,
+                    },
+                })
+                    .then((response) =>
+                        response
+                            .json()
+                            .then((data) => ({
+                                status: response.status,
+                                body: data,
+                            })),
+                    )
+                    .then((result) => {
+                        const data = result.body;
+                        if (
+                            result.status === 200 &&
+                            data.status === "success"
+                        ) {
+                            window.location.href = data.redirect;
+                        } else if (data.code === "user_exists") {
+                            emailErrorText.textContent = data.message;
+                            emailErrorText.style.display = "block";
+                            document.getElementById("email").focus();
+                        } else {
+                            alert(data.message || "회원가입에 실패했습니다.");
+                        }
+                    })
+                    .catch((error) => {
+                        console.error("Error:", error);
+                        alert("서버 통신 중 오류가 발생했습니다.");
+                    });
+
+                return false;
+            };
+
+            syncFoodDetailVisibility(
+                allergyPicker ? allergyPicker.getSelectedItems() : [],
+            );
+        </script>
+    </body>
 </html>
