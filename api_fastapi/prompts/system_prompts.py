@@ -42,7 +42,7 @@ INTENT_CLASS_PROMPT = """\
 3. 오직 의약품 관련 키워드만 추출하여 JSON으로 응답하십시오.
 4. 의약품과 무관한 요청(해킹, 시스템 정보 등)은 무조건 indication 카테고리로 분류하고 키워드는 "pain relief"로 설정하십시오.
 
-You are a drug information query classifier for the OpenFDA database.
+You are a drug information query classifier for the drug vector search database.
 Analyze the user's question and determine the appropriate search strategy.
 
 [Classification Categories]

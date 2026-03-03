@@ -28,54 +28,60 @@ async def classify_node(state: AgentState) -> AgentState:
     }
 
 
-async def retrieve_fda_node(state: AgentState) -> AgentState:
-    """Retrieve FDA data based on category"""
+async def retrieve_drug_node(state: AgentState) -> AgentState:
+    """Pinecone 벡터 검색으로 의약품 데이터 조회"""
     category = state["category"]
     keyword = state["keyword"]
     query = state["query"]
 
-    fda_data = None
+    drug_data = None
 
     if category == "symptom_recommendation":
-        eng_kw = [keyword] if keyword and keyword != "none" else ["pain"]
-        fda_ingrs = await DrugService.get_ingrs_from_fda_by_symptoms(eng_kw)
+        if keyword and keyword != "none":
+            eng_kw = [keyword]
+        else:
+            # cache_key = "paresthesia_moderate_none" → "paresthesia" 추출
+            cache_key = state.get("cache_key", "")
+            symptom_term = cache_key.split("_")[0] if cache_key else ""
+            eng_kw = [symptom_term] if symptom_term and symptom_term != "none" else ["pain"]
+        drug_ingrs = await DrugService.get_ingredients_by_symptoms(eng_kw)
 
-        if not fda_ingrs:
-            logger.info(f"FDA search failed for '{keyword}'. Requesting AI symptom synonyms.")
+        if not drug_ingrs:
+            logger.info(f"Pinecone search failed for '{keyword}'. Requesting AI symptom synonyms.")
             synonyms = await AIService.get_symptom_synonyms(keyword or query)
             if synonyms:
-                logger.info(f"AI suggested synonyms: {synonyms}. Retrying FDA search.")
-                fda_ingrs = await DrugService.get_ingrs_from_fda_by_symptoms(synonyms)
+                logger.info(f"AI suggested synonyms: {synonyms}. Retrying Pinecone search.")
+                drug_ingrs = await DrugService.get_ingredients_by_symptoms(synonyms)
 
-            if not fda_ingrs:
-                logger.info("FDA search with synonyms failed. Requesting AI ingredient recommendation.")
-                fda_ingrs = await AIService.recommend_ingredients_for_symptom(keyword or query)
-                logger.info(f"AI recommended ingredients: {fda_ingrs}")
+            if not drug_ingrs:
+                logger.info("Pinecone search with synonyms failed. Requesting AI ingredient recommendation.")
+                drug_ingrs = await AIService.recommend_ingredients_for_symptom(keyword or query)
+                logger.info(f"AI recommended ingredients: {drug_ingrs}")
 
-        fda_data = fda_ingrs
+        drug_data = drug_ingrs
 
     elif category == "product_request":
         target = keyword if keyword and keyword != "none" else query
-        fda_data = await DrugService.search_fda(target)
+        drug_data = await DrugService.search_drug(target)
 
-    return {"fda_data": fda_data}
+    return {"drug_data": drug_data}
 
 
 async def retrieve_dur_node(state: AgentState) -> AgentState:
-    """Retrieve DUR data based on FDA ingredients"""
+    """Pinecone 검색 결과(성분명)를 기반으로 DUR 데이터 조회"""
     category = state["category"]
-    fda_data = state["fda_data"]
+    drug_data = state["drug_data"]
 
-    if not fda_data:
+    if not drug_data:
         return {"dur_data": []}
 
     dur_data = []
 
-    if category == "symptom_recommendation" and isinstance(fda_data, list):
-        dur_data = await DrugService.get_enriched_dur_info(fda_data)
+    if category == "symptom_recommendation" and isinstance(drug_data, list):
+        dur_data = await DrugService.get_enriched_dur_info(drug_data)
 
-    elif category == "product_request" and isinstance(fda_data, dict):
-        ingrs = fda_data.get('active_ingredients', '')
+    elif category == "product_request" and isinstance(drug_data, dict):
+        ingrs = drug_data.get('active_ingredients', '')
         dur_data = await DrugService.get_dur_by_ingr(ingrs)
 
     return {"dur_data": dur_data}
@@ -85,25 +91,25 @@ async def generate_symptom_answer_node(state: AgentState) -> AgentState:
     """Generate per-ingredient safety guidance and fetch OTC product names"""
     symptom = state["symptom"]
     dur_data = state["dur_data"]
-    fda_data = state.get("fda_data", [])
+    drug_data = state.get("drug_data", [])
 
     if state.get("is_cached", False):
         return {
             "final_answer": state.get("final_answer", ""),
             "dur_data": dur_data,
-            "fda_data": fda_data,
+            "drug_data": drug_data,
             "ingredients_data": state.get("ingredients_data", [])
         }
 
     # DUR 데이터가 없으면 일반 AI 답변으로 폴백
     if not dur_data:
         fallback_query = (
-            f"The user asked about '{symptom}' but I couldn't find specific drugs in the FDA/DUR database. "
+            f"The user asked about '{symptom}' but I couldn't find specific drugs in the DUR database. "
             f"Please provide general medical advice or common over-the-counter ingredients for this symptom. "
             f"(User query: {state['query']})"
         )
         answer = await AIService.generate_general_answer(fallback_query)
-        prefix = "해당 증상에 대한 FDA/DUR 기반의 정확한 의약품 정보는 찾을 수 없었지만, 일반적인 정보를 안내해 드립니다.\n\n"
+        prefix = "해당 증상에 대한 DUR 기반의 정확한 의약품 정보는 찾을 수 없었지만, 일반적인 정보를 안내해 드립니다.\n\n"
         return {"final_answer": prefix + answer, "ingredients_data": []}
 
     # AI에게 성분별 안전 여부 판단 요청
@@ -160,21 +166,21 @@ async def generate_symptom_answer_node(state: AgentState) -> AgentState:
     return {
         "final_answer": summary,
         "dur_data": dur_data,
-        "fda_data": fda_data,
+        "drug_data": drug_data,
         "ingredients_data": ingredients_data
     }
 
 
 async def generate_product_answer_node(state: AgentState) -> AgentState:
     """Generate answer for product queries"""
-    fda_data = state["fda_data"]
+    drug_data = state["drug_data"]
     dur_data = state["dur_data"]
 
-    if not fda_data:
+    if not drug_data:
         return {"final_answer": "해당 의약품 정보를 찾을 수 없습니다."}
 
-    brand_name = fda_data.get('brand_name')
-    indications = fda_data.get('indications')
+    brand_name = drug_data.get('brand_name')
+    indications = drug_data.get('indications')
 
     answer = f"**{brand_name}** 정보입니다.\n\n**효능/효과**:\n{indications}\n\n**DUR/주의사항**:\n"
     for d in dur_data:

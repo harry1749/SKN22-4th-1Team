@@ -32,7 +32,7 @@ class AIService:
             
         try:
             res = await client.chat.completions.create(
-                model="gpt-4o-mini",
+                model="gpt-4.1-nano",
                 messages=[
                     {"role": "system", "content": INTENT_CLASS_PROMPT.format(user_query=query)},
                     # {"role": "user", "content": query} # Already integrated in system prompt
@@ -66,7 +66,7 @@ class AIService:
 
         try:
             res = await client.chat.completions.create(
-                model="gpt-4o-mini",
+                model="gpt-4.1-nano",
                 messages=[
                     {
                         "role": "system", 
@@ -93,7 +93,7 @@ class AIService:
             return "OpenAI API 키가 설정되지 않았습니다."
             
         res = await client.chat.completions.create(
-            model="gpt-4o-mini",
+            model="gpt-4.1-nano",
             messages=[{"role": "system", "content": "친절한 의료 지식 가이드."},
                       {"role": "user", "content": query}]
         )
@@ -119,7 +119,7 @@ class AIService:
         
         try:
             res = await client.chat.completions.create(
-                model="gpt-4o-mini",
+                model="gpt-4.1-nano",
                 messages=[{"role": "system", "content": "You are a medical assistant."},
                           {"role": "user", "content": prompt}],
                 response_format={ "type": "json_object" }
@@ -161,7 +161,7 @@ class AIService:
         
         try:
             res = await client.chat.completions.create(
-                model="gpt-4o-mini",
+                model="gpt-4.1-nano",
                 messages=[{"role": "system", "content": "You are a medical semantics analyzer."},
                           {"role": "user", "content": prompt}],
                 response_format={ "type": "json_object" }
@@ -201,7 +201,7 @@ class AIService:
         
         try:
             res = await client.chat.completions.create(
-                model="gpt-4o-mini",
+                model="gpt-4.1-nano",
                 messages=[{"role": "system", "content": "You are a medical terminologist."},
                           {"role": "user", "content": prompt}],
                 response_format={ "type": "json_object" }
@@ -242,7 +242,7 @@ class AIService:
         
         try:
             res = await client.chat.completions.create(
-                model="gpt-4o-mini",
+                model="gpt-4.1-nano",
                 messages=[{"role": "system", "content": "You are a pharmaceutical terminologist."},
                           {"role": "user", "content": prompt}],
                 response_format={ "type": "json_object" }
@@ -282,7 +282,7 @@ class AIService:
         
         try:
             res = await client.chat.completions.create(
-                model="gpt-4o-mini",
+                model="gpt-4.1-nano",
                 messages=[{"role": "system", "content": "You are a medical translator."},
                           {"role": "user", "content": prompt}]
             )
@@ -310,7 +310,7 @@ class AIService:
         
         try:
             res = await client.chat.completions.create(
-                model="gpt-4o-mini",
+                model="gpt-4.1-nano",
                 messages=[
                     {"role": "system", "content": "You are a professional medical translator."},
                     {"role": "user", "content": prompt}

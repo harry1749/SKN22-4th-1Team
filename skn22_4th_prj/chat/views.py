@@ -69,7 +69,7 @@ async def smart_search(request):
         )
 
     elif category == "product_request":
-        fda = result.get("fda_data")
+        fda = result.get("drug_data")
         dur = result.get("dur_data", [])
 
         if not fda:

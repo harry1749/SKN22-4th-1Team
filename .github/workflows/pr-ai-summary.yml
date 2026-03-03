@@ -1,0 +1,10 @@
+name: Call PR AI Summary
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+jobs:
+  call-pr-ai-summary:
+    uses: DJAeun/common-actions/.github/workflows/pr-ai-summary.yml@main
+    secrets: inherit

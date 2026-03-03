@@ -80,23 +80,22 @@ async def home(request: Request):
 @app.get("/web-search/{drug_name}", response_class=HTMLResponse)
 async def product_search(request: Request, drug_name: str):
     """제품명 기반 검색 (웹 화면용) - Supabase 사용"""
-    logger.info(f"Searching FDA for Product: {drug_name}")
-    fda_result = await DrugService.search_fda(drug_name)
-    
-    if not fda_result:
+    logger.info(f"Searching Pinecone for Product: {drug_name}")
+    drug_result = await DrugService.search_drug(drug_name)
+
+    if not drug_result:
         return templates.TemplateResponse("error.html", {
-            "request": request, "message": f"'{drug_name}' 정보를 FDA에서 찾을 수 없습니다."
+            "request": request, "message": f"'{drug_name}' 정보를 찾을 수 없습니다."
         })
-    
-    # This call now goes to SupabaseService.get_dur_by_ingr
-    kr_dur = await DrugService.get_dur_by_ingr(fda_result['active_ingredients'])
-    
+
+    kr_dur = await DrugService.get_dur_by_ingr(drug_result['active_ingredients'])
+
     return templates.TemplateResponse("search_result.html", {
-        "request": request, 
-        "drug_name": drug_name, 
-        "ingredients": fda_result['active_ingredients'],
-        "us_guideline": fda_result, 
-        "kr_dur": kr_dur, 
+        "request": request,
+        "drug_name": drug_name,
+        "ingredients": drug_result['active_ingredients'],
+        "us_guideline": drug_result,
+        "kr_dur": kr_dur,
         "dur_count": len(kr_dur),
         "maps_key": os.getenv("GOOGLE_MAPS_API_KEY")
     })
@@ -150,7 +149,7 @@ async def smart_search(request: Request, q: str):
 
 
     elif category == "product_request":
-        fda = result.get("fda_data")
+        fda = result.get("drug_data")
         dur = result.get("dur_data", [])
         
         if not fda:
@@ -184,22 +183,22 @@ async def smart_search(request: Request, q: str):
 
 @router.get("/global-search/{drug_name}")
 async def global_drug_search(drug_name: str):
-    fda_result = await DrugService.search_fda(drug_name)
-    if not fda_result:
-        raise HTTPException(status_code=404, detail="FDA info not found")
-    
-    kr_dur_result = await DrugService.get_dur_by_ingr(fda_result['active_ingredients'])
-    
+    drug_result = await DrugService.search_drug(drug_name)
+    if not drug_result:
+        raise HTTPException(status_code=404, detail="Drug info not found")
+
+    kr_dur_result = await DrugService.get_dur_by_ingr(drug_result['active_ingredients'])
+
     return {
         "status": "success",
         "origin": "USA",
         "drug_identity": {
-            "name": fda_result['brand_name'],
-            "ingredients": fda_result['active_ingredients']
+            "name": drug_result['brand_name'],
+            "ingredients": drug_result['active_ingredients']
         },
         "us_guideline": {
-            "purpose": fda_result['indications'],
-            "fda_warnings": fda_result['warnings']
+            "purpose": drug_result['indications'],
+            "warnings": drug_result['warnings']
         },
         "kr_safety_standard": {
             "dur_count": len(kr_dur_result),

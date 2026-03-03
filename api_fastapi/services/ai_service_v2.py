@@ -35,17 +35,33 @@ class AIService:
 
         try:
             res = await client.chat.completions.create(
-                model="gpt-4o-mini",
+                model="gpt-4.1-nano",
                 messages=[
                     {"role": "system", "content": INTENT_CLASS_PROMPT.format(user_query=query)},
                 ],
                 temperature=0,
+                max_tokens=150,
                 response_format={"type": "json_object"}
             )
             return json.loads(res.choices[0].message.content)
         except Exception as e:
             logger.error(f"Error in classify_intent: {e}")
             return {"category": "product_request", "keyword": query}
+
+    @staticmethod
+    def _compress_dur(data: list) -> str:
+        """DUR 데이터를 핵심 필드만 추출하여 압축 (입력 토큰 절감)"""
+        lines = []
+        for item in data:
+            ingr = item.get("ingredient", "")
+            kr_durs = item.get("kr_durs", [])[:2]
+            warnings = "; ".join(
+                f"{d.get('type', '')}: {d.get('warning', '')[:60]}"
+                for d in kr_durs
+            )
+            fda = (item.get("fda_warning") or "")[:100]
+            lines.append(f"- {ingr} | KR: {warnings} | FDA: {fda}")
+        return "\n".join(lines)
 
     @classmethod
     async def generate_symptom_answer(cls, symptom, data, user_profile=None):
@@ -64,21 +80,25 @@ class AIService:
             diseases = user_profile.get("chronic_diseases") or "None"
             logger.debug(f"User Profile — Meds: {meds}, Allergies: {allergies}, Diseases: {diseases}")
 
+        compressed_data = cls._compress_dur(data) if isinstance(data, list) else str(data)
+
         try:
             res = await client.chat.completions.create(
-                model="gpt-4o-mini",
+                model="gpt-4.1-nano",
                 messages=[
                     {
                         "role": "system",
                         "content": SYMPTOM_RESPONSE_PROMPT_V2.format(
                             symptom=symptom,
-                            data=str(data),
+                            data=compressed_data,
                             medications=meds,
                             allergies=allergies,
                             chronic_diseases=diseases
                         )
                     }
                 ],
+                max_tokens=600,
+                temperature=0,
                 response_format={"type": "json_object"}
             )
             return json.loads(res.choices[0].message.content)
@@ -93,7 +113,7 @@ class AIService:
             return "OpenAI API 키가 설정되지 않았습니다."
 
         res = await client.chat.completions.create(
-            model="gpt-4o-mini",
+            model="gpt-4.1-nano",
             messages=[
                 {"role": "system", "content": "친절한 의료 지식 가이드."},
                 {"role": "user", "content": query}
@@ -122,7 +142,7 @@ class AIService:
 
         try:
             res = await client.chat.completions.create(
-                model="gpt-4o-mini",
+                model="gpt-4.1-nano",
                 messages=[
                     {"role": "system", "content": "You are a medical assistant."},
                     {"role": "user", "content": prompt}
@@ -166,11 +186,12 @@ class AIService:
 
         try:
             res = await client.chat.completions.create(
-                model="gpt-4o-mini",
+                model="gpt-4.1-nano",
                 messages=[
                     {"role": "system", "content": "You are a medical semantics analyzer."},
                     {"role": "user", "content": prompt}
                 ],
+                max_tokens=60,
                 response_format={"type": "json_object"}
             )
             data = json.loads(res.choices[0].message.content)
@@ -206,7 +227,7 @@ class AIService:
 
         try:
             res = await client.chat.completions.create(
-                model="gpt-4o-mini",
+                model="gpt-4.1-nano",
                 messages=[
                     {"role": "system", "content": "You are a medical terminologist."},
                     {"role": "user", "content": prompt}
@@ -251,7 +272,7 @@ class AIService:
 
         try:
             res = await client.chat.completions.create(
-                model="gpt-4o-mini",
+                model="gpt-4.1-nano",
                 messages=[
                     {"role": "system", "content": "You are a pharmaceutical terminologist."},
                     {"role": "user", "content": prompt}
@@ -295,7 +316,7 @@ class AIService:
 
         try:
             res = await client.chat.completions.create(
-                model="gpt-4o-mini",
+                model="gpt-4.1-nano",
                 messages=[
                     {"role": "system", "content": "You are a medical translator."},
                     {"role": "user", "content": prompt}
@@ -325,7 +346,7 @@ class AIService:
 
         try:
             res = await client.chat.completions.create(
-                model="gpt-4o-mini",
+                model="gpt-4.1-nano",
                 messages=[
                     {"role": "system", "content": "You are a professional medical translator."},
                     {"role": "user", "content": prompt}

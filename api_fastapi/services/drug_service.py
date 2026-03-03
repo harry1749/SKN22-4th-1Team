@@ -1,17 +1,14 @@
-import httpx
 import logging
 from asgiref.sync import sync_to_async
 from django.db.models import Q
 import asyncio
 import re
+from .pinecone_service import PineconeService
 
 logger = logging.getLogger(__name__)
 
 class DrugService:
-    FDA_BASE_URL = "https://api.fda.gov/drug/label.json"
-    FDA_OTC_FILTER = 'openfda.product_type:"HUMAN OTC DRUG"'
-    
-    # 성분명 매핑 테이블 (FDA generic_name -> KR DUR ingr_eng_name)
+    # 성분명 매핑 테이블 (generic_name -> KR DUR ingr_eng_name)
     MANUAL_INGR_MAPPING = {
         "DIVALPROEX SODIUM": "VALPROIC ACID",
         "DIVALPROEX": "VALPROIC ACID",
@@ -19,101 +16,81 @@ class DrugService:
     }
 
     @classmethod
-    async def search_fda(cls, name: str):
+    async def search_drug(cls, name: str):
         """
-        특정 제품명으로 FDA 정보 검색 (비동기)
+        특정 제품명으로 Pinecone 벡터 검색 (비동기)
         상세 정보(적응증, 경고, 용법)를 포함하여 반환
         """
-        params = {
-            'search': f'(openfda.brand_name:"{name}"+OR+openfda.generic_name:"{name}")+AND+{cls.FDA_OTC_FILTER}',
+        # Search by brand_name or generic_name
+        # Assuming our Pinecone index has these fields in metadata
+        filter_dict = {
+            "$or": [
+                {"brand_name": {"$eq": name.upper()}},
+                {"generic_name": {"$eq": name.upper()}}
+            ]
         }
         
-        async with httpx.AsyncClient(timeout=10.0) as client:
-            try:
-                res = await client.get(cls.FDA_BASE_URL, params=params)
-                if res.status_code != 200:
-                    return None
-                
-                data = res.json().get('results', [])
-                if not data:
-                    return None
-                
-                result = data[0]
-                openfda = result.get('openfda', {})
-                
-                # 성분명 추출 (generic_name, substance_name 모두 포함)
-                # substance_name이 DUR DB의 'Active Moiety'와 일치할 확률이 높음 (예: DIVALPROEX -> VALPROIC ACID)
-                generic_names = openfda.get('generic_name', [])
-                substance_names = openfda.get('substance_name', [])
-                
-                combined_ingrs = list(set(generic_names + substance_names))
-                
-                if not combined_ingrs:
-                    combined_ingrs = result.get('active_ingredient', [])
-                
-                ingr_text = ", ".join(combined_ingrs) if isinstance(combined_ingrs, list) else str(combined_ingrs)
+        try:
+            matches = await PineconeService.search(query_text=name, filter_dict=filter_dict, top_k=1)
 
-                return {
-                    "brand_name": name,
-                    "active_ingredients": ingr_text or "Ingredient Not Found",
-                    "ingredients": ingr_text, # 호환성을 위해 유지
-                    "indications": result.get('indications_and_usage', ["Indications not provided"])[0],
-                    "warnings": result.get('warnings', ["Warnings not provided"])[0],
-                    "dosage": result.get('dosage_and_administration', ["Dosage info not provided"])[0]
-                }
-            except Exception as e:
-                logger.error(f"Error searching FDA: {e}")
+            if not matches:
                 return None
 
+            metadata = matches[0].get('metadata', {})
+
+            generic_name = metadata.get('generic_name', "")
+            substance_name = metadata.get('substance_name', "")
+            active_ingredient = metadata.get('active_ingredient', "")
+
+            combined_ingrs = list(set(filter(None, [generic_name, substance_name, active_ingredient])))
+            ingr_text = ", ".join(combined_ingrs)
+
+            return {
+                "brand_name": metadata.get('brand_name', name),
+                "active_ingredients": ingr_text or "Ingredient Not Found",
+                "ingredients": ingr_text,
+                "indications": metadata.get('indications_and_usage', "Indications not provided"),
+                "warnings": metadata.get('warnings', "Warnings not provided"),
+                "dosage": metadata.get('dosage_and_administration', "Dosage info not provided")
+            }
+        except Exception as e:
+            logger.error(f"Error searching drug via Pinecone: {e}")
+            return None
+
     @classmethod
-    async def get_ingrs_from_fda_by_symptoms(cls, keywords: list):
+    async def get_ingredients_by_symptoms(cls, keywords: list):
         """
-        영어 증상 키워드로 FDA 관련 성분명 추출 (비동기 + 병렬 처리)
-        
-        [개선] count=openfda.generic_name.exact 를 사용하여 특정 증상에 대해
-        가장 많이 허가된 다양한 활성 성분 TOP 20을 집계합니다.
-        기존처럼 search+limit=50을 쓰면 결과가 아세트아미노펜 브랜드 50개로
-        꽉 차서 이부프로펜, 나프록센, 아스피린 등이 누락되는 문제가 있었습니다.
+        영어 증상 키워드로 Pinecone 벡터 검색을 통해 관련 성분명 추출 (비동기 + 병렬 처리)
+        유사도 검색으로 상위 N(50)개의 결과를 가져온 후 코드 레벨에서 성분별 빈도를 집계(Aggregating)
         """
         all_ingrs = set()
+        ingredient_counts = {}
         
-        async with httpx.AsyncClient(timeout=10.0) as client:
-            tasks = []
-            for kw in keywords:
-                # count 엔드포인트: OTC 허가 성분명을 빈도 기준으로 집계
-                url = (
-                    f'{cls.FDA_BASE_URL}'
-                    f'?search=indications_and_usage:"{kw}"'
-                    f'+AND+{cls.FDA_OTC_FILTER}'
-                    f'&count=openfda.generic_name.exact'
-                )
-                tasks.append(client.get(url))
+        for kw in keywords:
+            # Filter by indications section if available
+            filter_dict = {"source_section": "indications_and_usage"}
+            matches = await PineconeService.search(query_text=kw, filter_dict=filter_dict, top_k=50)
             
-            responses = await asyncio.gather(*tasks, return_exceptions=True)
-            
-            for res in responses:
-                if isinstance(res, httpx.Response) and res.status_code == 200:
-                    try:
-                        results = res.json().get('results', [])
-                        # count 결과: [{"term": "ACETAMINOPHEN", "count": 911}, ...]
-                        # 상위 20개 성분만 추출 (복합제 성분명은 쉼표 구분으로 분리 시도)
-                        for item in results[:20]:
-                            term = item.get('term', '').upper()
-                            if not term:
-                                continue
-                            # 복합제인 경우 쉼표/AND로 개별 성분 분리
-                            parts = re.split(r',\s*| AND ', term)
-                            for part in parts:
-                                part = part.strip()
-                                # 숫자/단위가 포함된 부가 설명 제거 (예: "500 MG")
-                                part_clean = re.sub(r'\s+\d+.*$', '', part).strip()
-                                if part_clean and len(part_clean) > 2:
-                                    all_ingrs.add(part_clean)
-                    except Exception as e:
-                        logger.warning(f"[FDA count parse error]: {e}")
-                        continue
-                        
-        return list(all_ingrs)
+            for match in matches:
+                metadata = match.get('metadata', {})
+                term = metadata.get('generic_name', '').upper()
+                if not term:
+                    term = metadata.get('active_ingredient', '').upper()
+                if not term:
+                    continue
+                    
+                parts = re.split(r',\s*| AND ', term)
+                for part in parts:
+                    part = part.strip()
+                    part_clean = re.sub(r'\s+\d+.*$', '', part).strip()
+                    if part_clean and len(part_clean) > 2:
+                        # count aggregate
+                        ingredient_counts[part_clean] = ingredient_counts.get(part_clean, 0) + 1
+        
+        # Sort by frequency and get top 20
+        sorted_ingrs = sorted(ingredient_counts.items(), key=lambda x: x[1], reverse=True)
+        top_ingrs = [ingr for ingr, _ in sorted_ingrs[:20]]
+        return top_ingrs
 
     @staticmethod
     @sync_to_async
@@ -140,22 +117,22 @@ class DrugService:
         } for d in durs]
 
     @classmethod
-    async def get_fda_warnings_by_ingr(cls, ingr_name: str):
+    async def get_warnings_by_ingredient(cls, ingr_name: str):
         """
-        성분명으로 FDA 경고(Warnings) 정보 조회
+        성분명으로 경고(Warnings) 정보 조회
         """
-        params = {
-            'search': f'openfda.generic_name:"{ingr_name}"+AND+{cls.FDA_OTC_FILTER}',
+        filter_dict = {
+            "generic_name": {"$eq": ingr_name.upper()},
+            "source_section": {"$eq": "warnings"}
         }
-        async with httpx.AsyncClient(timeout=5.0) as client:
-            try:
-                res = await client.get(cls.FDA_BASE_URL, params=params)
-                if res.status_code == 200:
-                    data = res.json().get('results', [])
-                    if data:
-                        return data[0].get('warnings', ["No FDA warning found."])[0]
-            except Exception as e:
-                logger.warning(f"Error fetching FDA warnings for '{ingr_name}': {e}")
+
+        try:
+            matches = await PineconeService.search(query_text=ingr_name, filter_dict=filter_dict, top_k=1)
+            if matches:
+                metadata = matches[0].get('metadata', {})
+                return metadata.get('chunk_text', "No warning found.")
+        except Exception as e:
+            logger.warning(f"Error fetching warnings for '{ingr_name}': {e}")
         return None
 
     @classmethod
@@ -163,35 +140,21 @@ class DrugService:
         """
         영어 성분명 리스트를 받아 KR DUR 및 FDA Warning 정보를 병합하여 반환
         """
-        from drugs.models import DurMaster
-        enriched_data = []
-
         # 1. 고유 성분명으로 정리
         unique_ingrs = sorted(list(set([i.upper() for i in ingr_list])))
 
-        for ingr in unique_ingrs:
-            # 2. KR DUR 조회 (동기 DB 호출을 비동기로 래핑해야 함 - 여기서는 sync_to_async 사용 권장되지만, loop 내 호출이므로 주의)
-            # 성능을 위해 전체 쿼리를 먼저 하고 매핑하는 것이 좋지만, 일단 간단 구현
-            durs = await cls._get_kr_durs_async(ingr)
-            
-            # 3. FDA Warning 조회
-            fda_warn = await cls.get_fda_warnings_by_ingr(ingr)
-            
-            # [Translation & Summarization]
-            if fda_warn:
-                from services.ai_service import AIService
-                # 요약 실행 (병목 가능성 있으나, 정확도 위해 수행)
-                summary = await AIService.summarize_fda_warning(fda_warn)
-                if summary:
-                    fda_warn = summary
-            
-            enriched_data.append({
-                "ingredient": ingr,
-                "kr_durs": durs,
-                "fda_warning": fda_warn
-            })
-            
-        return enriched_data
+        # 배치 임베딩 사전 캐시 (CPU 경합 방지: 5× to_thread → 1× to_thread)
+        await PineconeService.prefetch_embeddings(unique_ingrs)
+
+        async def fetch_info(ingr):
+            durs, warn = await asyncio.gather(
+                cls._get_kr_durs_async(ingr),
+                cls.get_warnings_by_ingredient(ingr)
+            )
+            return {"ingredient": ingr, "kr_durs": durs, "fda_warning": warn}
+
+        enriched_data = await asyncio.gather(*[fetch_info(ingr) for ingr in unique_ingrs])
+        return list(enriched_data)
 
     @classmethod
     async def _get_kr_durs_async(cls, ingr_name):
@@ -343,19 +306,30 @@ class DrugService:
 
     @classmethod
     async def get_us_mapping(cls, ingredient_name: str):
-        url = f"https://api.fda.gov/drug/label.json?search=openfda.substance_name:\"{ingredient_name}\"+AND+openfda.product_type:\"HUMAN OTC DRUG\"&limit=3"
-        async with httpx.AsyncClient() as client:
-            response = await client.get(url)
-            if response.status_code != 200:
+        """
+        Pinecone에서 해당 성분명으로 브랜드 등 정보 검색
+        """
+        filter_dict = {
+            "substance_name": {"$eq": ingredient_name.upper()}
+        }
+        
+        try:
+            matches = await PineconeService.search(query_text=ingredient_name, filter_dict=filter_dict, top_k=3)
+            if not matches:
                 return {"error": "미국 내 해당 성분 의약품을 찾을 수 없습니다."}
-            data = response.json()
-            return [
-                {
-                    "brand_name": res.get("openfda", {}).get("brand_name", ["N/A"])[0],
-                    "dosage_form": res.get("openfda", {}).get("dosage_form", ["N/A"])[0],
-                    "warnings": res.get("warnings", ["N/A"])[0][:200]
-                } for res in data.get("results", [])
-            ]
+                
+            results = []
+            for match in matches:
+                metadata = match.get('metadata', {})
+                results.append({
+                    "brand_name": metadata.get("brand_name", "N/A"),
+                    "dosage_form": metadata.get("dosage_form", "N/A"), # Assuming dosage form might exist, fallback N/A
+                    "warnings": metadata.get("chunk_text", "N/A")[:200] if metadata.get("source_section") == "warnings" else "N/A"
+                })
+            return results
+        except Exception as e:
+            logger.error(f"Error getting US mapping for '{ingredient_name}': {e}")
+            return {"error": "미국 내 해당 성분 의약품을 찾을 수 없습니다."}
 
     @classmethod
     def compare_dosage_and_warn(cls, fda_active_ingredient_text: str, kr_dosage_mg: float) -> dict:

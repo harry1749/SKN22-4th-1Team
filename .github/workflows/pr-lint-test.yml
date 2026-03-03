@@ -1,0 +1,12 @@
+name: Call PR Lint & Test
+
+on:
+  push:
+    branches: [ "main", "develop" ]
+  pull_request:
+    branches: [ "main", "develop" ]
+
+jobs:
+  call-pr-lint-test:
+    uses: DJAeun/common-actions/.github/workflows/pr-lint-test.yml@main
+    secrets: inherit

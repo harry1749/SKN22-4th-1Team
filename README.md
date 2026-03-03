@@ -186,7 +186,7 @@ uvicorn main2:app --reload --port 8000
 
 | 변수명              | 필수 여부           | 설명                                 |
 | ------------------- | ------------------- | ------------------------------------ |
-| `OPENAI_API_KEY`    | ★ 필수              | GPT-4o-mini 호출용                   |
+| `OPENAI_API_KEY`    | ★ 필수              | gpt-4.1-nano 호출용                   |
 | `SUPABASE_URL`      | ★ 필수              | Supabase 프로젝트 URL                |
 | `SUPABASE_KEY`      | ★ 필수              | Supabase anon public key             |
 | `DB_NAME`           | ★ 필수              | MySQL 데이터베이스명                 |
@@ -206,7 +206,7 @@ uvicorn main2:app --reload --port 8000
 | ------------- | ---------------------------------------------- |
 | API 서버      | FastAPI + Uvicorn                              |
 | AI 워크플로우 | LangGraph (비순환 그래프 파이프라인)           |
-| LLM           | OpenAI GPT-4o-mini                             |
+| LLM           | OpenAI gpt-4.1-nano                             |
 | 데이터베이스  | MySQL (Django ORM) + Supabase (PostgreSQL)     |
 | 인증          | JWT (python-jose)                              |
 | 외부 API      | 미국 FDA Open API, 한국 공공데이터포털 DUR API |

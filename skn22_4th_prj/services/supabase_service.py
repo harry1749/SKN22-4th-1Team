@@ -107,20 +107,17 @@ class SupabaseService:
     @classmethod
     async def get_enriched_dur_info(cls, ingr_list: list):
         unique_ingrs = sorted(list(set([i.upper() for i in ingr_list])))
-        enriched_data = []
         from services.drug_service import DrugService as OriginalDrugService
 
-        for ingr in unique_ingrs:
-            durs = await cls._get_kr_durs_supabase(ingr)
-            fda_warn = await OriginalDrugService.get_fda_warnings_by_ingr(ingr)
-            if fda_warn:
-                summary = await AIService.summarize_fda_warning(fda_warn)
-                if summary:
-                    fda_warn = summary
-            enriched_data.append(
-                {"ingredient": ingr, "kr_durs": durs, "fda_warning": fda_warn}
+        async def fetch_info(ingr):
+            durs, warn = await asyncio.gather(
+                cls._get_kr_durs_supabase(ingr),
+                OriginalDrugService.get_warnings_by_ingredient(ingr),
             )
-        return enriched_data
+            return {"ingredient": ingr, "kr_durs": durs, "fda_warning": warn}
+
+        enriched_data = await asyncio.gather(*[fetch_info(ingr) for ingr in unique_ingrs])
+        return list(enriched_data)
 
     @classmethod
     async def _get_kr_durs_supabase(cls, ingr_name):
@@ -135,21 +132,26 @@ class SupabaseService:
         dur_list = []
         try:
             is_korean = bool(re.search("[가-힣]", target_name))
-            if is_korean:
-                response = (
-                    client.table("dur_master")
-                    .select("*")
-                    .ilike("ingr_kor_name", f"%{target_name}%")
-                    .execute()
-                )
-            else:
-                response = (
-                    client.table("dur_master")
-                    .select("*")
-                    .ilike("ingr_eng_name", f"%{target_name.lower()}%")
-                    .execute()
-                )
-            dur_list = response.data
+
+            def _sync_query():
+                if is_korean:
+                    return (
+                        client.table("dur_master")
+                        .select("*")
+                        .ilike("ingr_kor_name", f"%{target_name}%")
+                        .execute()
+                        .data
+                    )
+                else:
+                    return (
+                        client.table("dur_master")
+                        .select("*")
+                        .ilike("ingr_eng_name", f"%{target_name.lower()}%")
+                        .execute()
+                        .data
+                    )
+
+            dur_list = await asyncio.to_thread(_sync_query)
         except Exception as e:
             logger.error(f"[Supabase] DUR query error for '{target_name}': {e}")
             return []
@@ -253,7 +255,7 @@ class SupabaseService:
         cls,
         query_text: str,
         category: str,
-        fda_data: list,
+        drug_data: list,
         dur_data: list,
         final_answer: str,
         recommended_ingredients: list,
@@ -265,7 +267,7 @@ class SupabaseService:
             payload = {
                 "query_text": query_text,
                 "category": category,
-                "fda_data": fda_data if fda_data else [],
+                "fda_data": drug_data if drug_data else [],
                 "dur_data": dur_data if dur_data else [],
                 "final_answer": final_answer,
                 "recommended_ingredients": (

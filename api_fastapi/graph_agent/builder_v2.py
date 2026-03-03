@@ -2,7 +2,7 @@ from langgraph.graph import StateGraph, END
 from .state import AgentState
 from .nodes_v2 import (
     classify_node,
-    retrieve_fda_node,
+    retrieve_drug_node,
     retrieve_dur_node,
     generate_symptom_answer_node,
     generate_product_answer_node,
@@ -13,15 +13,13 @@ from .nodes_v2 import (
 def build_graph():
     """
     Build and compile the LangGraph workflow V2 for drug information
-    (Optimized with parallel logic where applicable & V2 prompt nodes)
+    (Pinecone 벡터 검색 기반, 병렬 처리 최적화)
     """
     workflow = StateGraph(AgentState)
 
     # Add Nodes
     workflow.add_node("classify", classify_node)
-    
-    # [V2 최적화] FDA 조차도 비동기 내부에서 모아치기 처리가 가능하도록 변경
-    workflow.add_node("retrieve_fda", retrieve_fda_node)
+    workflow.add_node("retrieve_drug", retrieve_drug_node)
     workflow.add_node("retrieve_dur", retrieve_dur_node)
     
     workflow.add_node("answer_symptom", generate_symptom_answer_node)
@@ -54,17 +52,15 @@ def build_graph():
         route_query,
         {
             "cached_symptom": "answer_symptom",
-            "indication": "retrieve_fda",
-            "product": "retrieve_fda",
+            "indication": "retrieve_drug",
+            "product": "retrieve_drug",
             "general": "answer_general",
             "error": "answer_error"
         }
     )
 
-    # Linear flow for retrievals (FDA -> DUR) 
-    # (일부 API 특성상 종속성이 있어 FDA성분명 추출 후 DUR 조회가 강제되나,
-    # 이후의 asyncio.gather 확장을 고려하여 엣지는 유지하되 node 내부 로직 최적화에 집중함)
-    workflow.add_edge("retrieve_fda", "retrieve_dur")
+    # Linear flow: Pinecone 벡터 검색 → DUR 조회 (성분명 추출 후 DUR 조회)
+    workflow.add_edge("retrieve_drug", "retrieve_dur")
 
     # Route after DUR retrieval to appropriate answer generator
     def route_answer_generation(state: AgentState):
@@ -76,7 +72,7 @@ def build_graph():
          return "answer_error" # Should not happen
 
     workflow.add_conditional_edges(
-        "retrieve_dur",
+        "retrieve_dur",  # DUR 조회 후 카테고리에 따라 분기
         route_answer_generation,
         {
             "answer_symptom": "answer_symptom",

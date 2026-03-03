@@ -3,7 +3,7 @@ import logging
 import httpx
 import re
 import asyncio
-from services.ai_service_v2 import AIService
+from .pinecone_service import PineconeService
 
 logger = logging.getLogger(__name__)
 
@@ -32,60 +32,49 @@ class MapService:
         """
         특정 주성분이 포함된 미국 내 가용 OTC 제품명(Brand Name) 및 기전 전수 리스트업
         """
-        # openFDA에서 substance_name 혹은 generic_name으로 검색. (limit=50)
-        OTC_FILTER = 'openfda.product_type:"HUMAN OTC DRUG"'
-        url = (
-            f'https://api.fda.gov/drug/label.json'
-            f'?search=(openfda.substance_name:"{ingredient}"+OR+openfda.generic_name:"{ingredient}")'
-            f'+AND+{OTC_FILTER}'
-            f'&limit=50'
-        )
+        # Search using generic_name or substance_name or active_ingredient
+        filter_dict = {
+            "$or": [
+                {"substance_name": {"$eq": ingredient.upper()}},
+                {"generic_name": {"$eq": ingredient.upper()}},
+                {"active_ingredient": {"$in": [ingredient.upper()]}}
+            ]
+        }
         
-        async with httpx.AsyncClient(timeout=10.0) as client:
-            try:
-                response = await client.get(url)
-                if response.status_code != 200:
-                    return {"ingredient": ingredient, "products": [], "message": "FDA API에서 제품을 찾을 수 없습니다."}
-                
-                data = response.json().get('results', [])
-                
-                products_info = []
-                for item in data:
-                    openfda = item.get('openfda', {})
-                    brand_name = openfda.get('brand_name', [])
-                    if not brand_name:
-                        continue
-                    
-                    # 기전(Mechanism of Action) 또는 사용목적(purpose) 추출
-                    purpose = item.get('purpose', ["Description not available."])[0]
-                    active_ingr = item.get('active_ingredient', ["Unknown"])[0]
-                    
-                    products_info.append({
-                        "brand_name": brand_name[0],
-                        "purpose": purpose,
-                        "active_ingredient": active_ingr
-                    })
-                
-                # 중복 제거 (brand_name 기준)
-                unique_products = {prod['brand_name']: prod for prod in products_info}.values()
-                sorted_products = sorted(list(unique_products), key=lambda x: x['brand_name'])
-                
-                # 목적(purpose) 한국어 번역
-                purposes_to_translate = [p['purpose'] for p in sorted_products]
-                translated_purposes = await AIService.translate_purposes(purposes_to_translate)
-                
-                for i, prod in enumerate(sorted_products):
-                    if i < len(translated_purposes):
-                        prod['purpose'] = translated_purposes[i]
-                
-                return {
-                    "ingredient": ingredient,
-                    "products": sorted_products,
-                    "count": len(sorted_products)
-                }
-            except Exception as e:
-                logger.error(f"Error fetching FDA products for '{ingredient}': {e}")
-                return {"ingredient": ingredient, "products": [], "error": str(e)}
+        try:
+            matches = await PineconeService.search(query_text=ingredient, filter_dict=filter_dict, top_k=5)
+
+            if not matches:
+                return {"ingredient": ingredient, "products": [], "message": "Pinecone 검색 결과에서 제품을 찾을 수 없습니다."}
+
+            products_info = []
+            for match in matches:
+                metadata = match.get('metadata', {})
+                brand_name = metadata.get('brand_name', '')
+                if not brand_name:
+                    continue
+
+                purpose = metadata.get('purpose', "Description not available.")
+                active_ingr = metadata.get('active_ingredient', "Unknown")
+
+                products_info.append({
+                    "brand_name": brand_name,
+                    "purpose": purpose,
+                    "active_ingredient": active_ingr
+                })
+
+            # 중복 제거 (brand_name 기준)
+            unique_products = {prod['brand_name']: prod for prod in products_info}.values()
+            sorted_products = sorted(list(unique_products), key=lambda x: x['brand_name'])
+
+            return {
+                "ingredient": ingredient,
+                "products": sorted_products,
+                "count": len(sorted_products)
+            }
+        except Exception as e:
+            logger.error(f"Error fetching products for '{ingredient}' via Pinecone: {e}")
+            return {"ingredient": ingredient, "products": [], "error": str(e)}
 
     @classmethod
     async def find_optimal_us_products(cls, ingredients: list):
@@ -97,51 +86,52 @@ class MapService:
         if not ingredients:
             return {"match_type": "NONE", "recommendations": []}
 
-        # Full Match 검색 시도 (단순화를 위해 각 성분이 모두 포함되는지 AND 검색)
-        OTC_FILTER = 'openfda.product_type:"HUMAN OTC DRUG"'
-        search_query = "+AND+".join(
-            [f'(openfda.substance_name:"{ingr}"+OR+openfda.generic_name:"{ingr}")' for ingr in ingredients]
-        )
-        url = f'https://api.fda.gov/drug/label.json?search={search_query}+AND+{OTC_FILTER}&limit=10'
+        # Full Match 검색 시도 (단순화를 위해 각 성분이 모두 포함되는지 AND 연산 필터 생성)
+        # However, metadata values are scalar, so checking if multiple values exist in a single record
+        # might require regex or text search if they are flat strings. E.g. active_ingredient contains both.
+        # Since active_ingredient is a string, we can rely on semantic search + checking metadata locally.
+        query_text = " and ".join(ingredients)
         
-        async with httpx.AsyncClient(timeout=10.0) as client:
-            try:
-                res = await client.get(url)
-                if res.status_code == 200 and res.json().get('results'):
-                    # Full Match 성공
-                    results = res.json().get('results', [])
-                    products = []
-                    for item in results:
-                        brand_name = item.get('openfda', {}).get('brand_name', ['Unknown'])[0]
-                        purpose = item.get('purpose', ['No purpose specified.'])[0]
-                        active_ingr = item.get('active_ingredient', ['Unknown'])[0]
-                        products.append({
-                            "brand_name": brand_name, 
-                            "purpose": purpose,
-                            "active_ingredient": active_ingr
-                        })
-                    
-                    # 목적(purpose) 한국어 번역
-                    purposes_to_translate = [p['purpose'] for p in products]
-                    translated_purposes = await AIService.translate_purposes(purposes_to_translate)
-                    
-                    for i, prod in enumerate(products):
-                        if i < len(translated_purposes):
-                            prod['purpose'] = translated_purposes[i]
-                    
-                    return {
-                        "match_type": "FULL_MATCH",
-                        "description": "모든 성분이 일치하는 미국 복합제 우선 추천",
-                        "recommendations": products
-                    }
-            except Exception as e:
-                logger.error(f"Full match search error: {e}")
+        try:
+             # We query with the combined string and take top 20, then filter locally for full match
+             matches = await PineconeService.search(query_text=query_text, top_k=20)
+             
+             products = []
+             for match in matches:
+                 metadata = match.get('metadata', {})
+                 # We need to find products where ALL ingredients are present in generic_name or substance_name or active_ingredient
+                 text_to_search = str(metadata.get('generic_name', '')) + " " + str(metadata.get('substance_name', '')) + " " + str(metadata.get('active_ingredient', ''))
+                 text_to_search = text_to_search.lower()
+                 
+                 has_all = all(ingr.lower() in text_to_search for ingr in ingredients)
+                 
+                 if has_all:
+                     brand_name = metadata.get('brand_name', 'Unknown')
+                     if brand_name == 'Unknown': continue
+                     
+                     products.append({
+                        "brand_name": brand_name, 
+                        "purpose": metadata.get('purpose', 'No purpose specified.'),
+                        "active_ingredient": metadata.get('active_ingredient', 'Unknown')
+                     })
+                     
+             # 중복 제거
+             unique_products = {prod['brand_name']: prod for prod in products}.values()
+             products = list(unique_products)[:10]
+
+             if products:
+                 return {
+                     "match_type": "FULL_MATCH",
+                     "description": "모든 성분이 일치하는 미국 복합제 우선 추천",
+                     "recommendations": products
+                 }
+        except Exception as e:
+            logger.error(f"Full match search error: {e}")
         
         # Component Match (Full Match 실패 또는 데이터 부족 시 개별 검색)
-        component_recommendations = []
-        for ingr in ingredients:
-            ingr_products = await cls.get_us_otc_products_by_ingredient(ingr)
-            component_recommendations.append(ingr_products)
+        component_recommendations = await asyncio.gather(
+            *[cls.get_us_otc_products_by_ingredient(ingr) for ingr in ingredients]
+        )
             
         return {
             "match_type": "COMPONENT_MATCH",

@@ -13,13 +13,13 @@ from .nodes_v2 import (
 def build_graph():
     """
     Build and compile the LangGraph workflow V2 for drug information
-    (Optimized: merged FDA+DUR retrieval, parallel product fetch + AI answer)
+    (Pinecone 벡터 검색 기반: 벡터 검색+DUR 통합 조회, 병렬 제품 조회 + AI 답변)
     """
     workflow = StateGraph(AgentState)
 
     # Add Nodes
     workflow.add_node("classify", classify_node)
-    workflow.add_node("retrieve_data", retrieve_data_node)  # Merged FDA + DUR
+    workflow.add_node("retrieve_data", retrieve_data_node)  # Merged Pinecone 벡터 검색 + DUR
     workflow.add_node("answer_symptom", generate_symptom_answer_node)
     workflow.add_node("answer_product", generate_product_answer_node)
     workflow.add_node("answer_general", generate_general_answer_node)

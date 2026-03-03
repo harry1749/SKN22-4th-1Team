@@ -62,38 +62,19 @@ class SupabaseService:
         unique_ingrs = sorted(list(set([i.upper() for i in ingr_list])))
         enriched_data = []
         
-        # DrugService uses DrugService.get_fda_warnings_by_ingr(ingr)
-        # We need to import DrugService to reuse FDA part? 
-        # Or just reimplement/import strictly.
-        # Since we are monkey-patching DrugService, calling DrugService inside here might be recursive if not careful.
-        # But FDA part in DrugService is fine to reuse if we didn't patch it.
-        # Wait, if we patch DrugService methods, we overwrite them.
-        # So we should copy FDA logic here or keep FDA logic in DrugService and ONLY patch DUR methods.
-        
-        # Strategy: We will ONLY patch 'get_dur_by_ingr' and 'get_enriched_dur_info'.
-        # But 'get_enriched_dur_info' calls 'get_fda_warnings_by_ingr'.
-        # If we patch 'get_enriched_dur_info', we can call 'DrugService.get_fda_warnings_by_ingr' provided we didn't patch THAT one.
-        
-        # However, to avoid circular imports or issues, let's just use httpx for FDA directly or assume DrugService.get_fda_warnings_by_ingr is available.
-        # Actually, best validation is to look at DrugService.
         from services.drug_service import DrugService as OriginalDrugService
 
         for ingr in unique_ingrs:
-            # 2. KR DUR 조회 (Supabase)
+            # KR DUR 조회 (Supabase)
             durs = await cls._get_kr_durs_supabase(ingr)
-            
-            # 3. FDA Warning 조회 (Reuse existing logic)
-            fda_warn = await OriginalDrugService.get_fda_warnings_by_ingr(ingr)
-            
-            if fda_warn:
-                summary = await AIService.summarize_fda_warning(fda_warn)
-                if summary:
-                    fda_warn = summary
-            
+
+            # Pinecone 벡터 검색으로 경고 정보 조회
+            warn = await OriginalDrugService.get_warnings_by_ingredient(ingr)
+
             enriched_data.append({
                 "ingredient": ingr,
                 "kr_durs": durs,
-                "fda_warning": fda_warn
+                "fda_warning": warn
             })
             
         return enriched_data
@@ -118,17 +99,26 @@ class SupabaseService:
         dur_list = []
         try:
             is_korean = bool(re.search('[가-힣]', target_name))
-            if is_korean:
-                response = client.table("dur_master") \
-                    .select("*") \
-                    .ilike("ingr_kor_name", f"%{target_name}%") \
-                    .execute()
-            else:
-                response = client.table("dur_master") \
-                    .select("*") \
-                    .ilike("ingr_eng_name", f"%{target_name.lower()}%") \
-                    .execute()
-            dur_list = response.data
+
+            def _sync_query():
+                if is_korean:
+                    return (
+                        client.table("dur_master")
+                        .select("*")
+                        .ilike("ingr_kor_name", f"%{target_name}%")
+                        .execute()
+                        .data
+                    )
+                else:
+                    return (
+                        client.table("dur_master")
+                        .select("*")
+                        .ilike("ingr_eng_name", f"%{target_name.lower()}%")
+                        .execute()
+                        .data
+                    )
+
+            dur_list = await asyncio.to_thread(_sync_query)
         except Exception as e:
             logger.error(f"[Supabase] DUR query error for '{target_name}': {e}")
             return []
@@ -225,7 +215,7 @@ class SupabaseService:
         return None
 
     @classmethod
-    async def set_symptom_cache(cls, query_text: str, category: str, fda_data: list, dur_data: list, final_answer: str, recommended_ingredients: list):
+    async def set_symptom_cache(cls, query_text: str, category: str, drug_data: list, dur_data: list, final_answer: str, recommended_ingredients: list):
         """
         새로 생성된 응답을 DB에 캐싱 (백그라운드 비동기 처리를 권장)
         """
@@ -236,7 +226,7 @@ class SupabaseService:
             payload = {
                 "query_text": query_text,
                 "category": category,
-                "fda_data": fda_data if fda_data else [],
+                "fda_data": drug_data if drug_data else [],
                 "dur_data": dur_data if dur_data else [],
                 "final_answer": final_answer,
                 "recommended_ingredients": recommended_ingredients if recommended_ingredients else []

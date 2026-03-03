@@ -35,3 +35,5 @@ ipython                 # 향상된 쉘 환경 (manage.py shell_plus 등)
 jinja2                  # 템플릿 엔진 (필수)
 tiktoken                # OpenAI 토큰 계산 (권장)
 supabase
+pinecone
+sentence-transformers>=2.6.0

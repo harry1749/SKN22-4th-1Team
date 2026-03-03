@@ -1,0 +1,10 @@
+name: Call Release Please
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  call-release-please:
+    uses: DJAeun/common-actions/.github/workflows/release-please.yml@main
+    secrets: inherit
