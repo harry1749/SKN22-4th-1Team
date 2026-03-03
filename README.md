@@ -52,7 +52,7 @@
 | 🤖 **Orchestrator** | LangGraph | State Graph를 활용한 에이전트 단계 제어 (분류/검색/생성) |
 | ✍️ **Agent Core** | GPT-4o-mini | 의도 분류 로직(Classifier) 및 질의응답 응답(Generator) |
 | ☁️ **External API** | OpenFDA | 미국 FDA 약품 라벨 및 가이드라인 DB 검색 연동 |
-| 🔧 **Data & Auth** | Supabase, MySQL | 유저 인증 및 프로필/DUR 관리 데이터 소스 |
+| 🔧 **Data & Auth** | Supabase (PostgreSQL) | 유저 인증 및 프로필/DUR 관리 데이터 소스 |
 | 📡 **External API** | Google Maps API | 내 주변 반경 내 약국 및 병원 확인 |
 
 ---
@@ -92,12 +92,12 @@
 ```mermaid
 graph TD
     %% 사용자 및 진입점
-    User["👤 사용자"] -->|"1. 질의 입력"| DjangoUrls["skn22_4th_prj/urls.py"]
-    DjangoUrls -->|"2. 경로 지정"| Views["chat/views.py"]
+    User["👤 사용자"] -->|"질의 또는 위치 정보"| DjangoUrls["skn22_4th_prj/urls.py"]
+    DjangoUrls -->|"경로 지정"| Views["chat/views.py"]
 
     subgraph Security_User ["🛡️ Authentication & Profile"]
         Views -.->|"메디컬 정보 획득"| UserSvc["user_service.py"]
-        UserSvc -->|"Read"| Supabase[("☁️ Supabase / MySQL")]
+        UserSvc -->|"Read/Write"| Supabase[("☁️ Supabase (PostgreSQL)")]
     end
 
     subgraph LangGraph ["⛓️ Graph Agent Layer (graph_agent/)"]
@@ -113,27 +113,25 @@ graph TD
         DrugSvc["drug_service.py"]
     end
 
-    %% Flow
-    Views -->|"3. 그래프 체인 시작"| Builder
-    Builder -->|"4. 상태 관리"| State
-    State -->|"5. 분기 판단"| Nodes
+    %% Flow: AI 응답 파이프라인
+    Views -->|"그래프 체인 시작"| Builder
+    Builder -->|"상태 관리"| State
+    State -->|"분기 판단"| Nodes
     Nodes -.->|"Prompts 참조"| Prompts
 
-    %% Agent External calls
-    Nodes -->|"6. 검색/추론 요청"| DrugSvc
-    Nodes -->|"7. LLM 요약/분류"| AISvc
-    Nodes -->|"8. 위치 탐색"| MapSvc
+    %% Agent External calls (Data Retrieval & AI)
+    Nodes -->|"검색/추론 요청"| DrugSvc
+    Nodes -->|"LLM 요약/분류"| AISvc
+    
+    %% Flow: 비동기 약국 탐색 파이프라인
+    Views -->|"비동기 위치 탐색 (독립 실행)"| MapSvc
     
     %% APIs
     DrugSvc -->|"HTTP"| ExtPine[("FDA / Public API")]
     DrugSvc -->|"HTTP"| ExtFDA[("📡 OpenFDA & DUR API")]
     MapSvc -->|"HTTP"| ExtMaps[("🗺️ Google Maps API")]
 
-    %% Styles
-    style Views fill:#f9f,stroke:#333
-    style Security_User fill:#f99,stroke:#333
-    style LangGraph fill:#9f9,stroke:#333
-    style Services fill:#9ff,stroke:#333
+
 ```
 
 ### 🌊 출력 파이프라인 (Data Pipeline Flow)
@@ -142,35 +140,34 @@ graph TD
 
 ```mermaid
 sequenceDiagram
-    participant U as User
+    participant MAP as Google Maps API
+    participant U as User (Client)
     participant V as Django View
-    participant DB as User DB (Supabase)
-    participant R as Router (LangGraph)
-    participant API as OpenFDA / DUR API
+    participant R as LangGraph Router
+    participant API as Supabase & FDA/DUR API
     participant LLM as GPT-4o-mini
-    participant MAP as Google Maps
 
-    U->>V: 1. 자연어 증상 입력
-    V->>DB: 2. 유저 메디컬 프로필 조회 (알레르기, 기저질환 등)
-    DB-->>V: 프로필 데이터 반환
-    V->>R: 3. Graph Agent에 질의 + 프로필 전달
+    U->>V: 1. 자연어 증상 검색
+    V->>R: 2. Graph Agent에 질의 및 사용자 세션 정보 전달
     
-    R->>R: 4. 의도 분류 (Classifier Node)
+    R->>LLM: 3. 사용자 의도 및 상태 분류
+    LLM-->>R: 분석 결과 반환
     
-    rect rgb(240, 248, 255)
-        Note right of R: 상태 전이: symptom_recommendation
-        R->>API: 5. 증상 기반 FDA 가이드 및 DUR 주의사항 검색
-        API-->>R: 위반 성분 및 추천 성분 데이터
-    end
+    Note left of API: Data Retrieval (병렬 처리)
+    R->>API: 4. 유저 프로필 조회 및 성분탐색
+    API-->>R: 추천 성분 및 DUR 반환
     
-    R->>LLM: 6. 분석 데이터 기반 답변 생성 요청
-    LLM-->>R: 안전 정보가 반영된 최종 한국어 답변
+    R->>LLM: 5. 수집 제약 데이터 기반 답변 요청
+    LLM-->>R: 환자 맞춤형 최종 답변
     
-    R->>MAP: 7. 사용자 장치 위치 기반 주변 약국 탐색
-    MAP-->>R: 3km 이내 약국 리스트
+    R-->>V: 6. 생성 결과 반환 (답변 + 성분)
+    V-->>U: 7. 결과 화면(HTML) 출력
     
-    R-->>V: 8. 최종 결과 반환 (답변 + 약국 목록)
-    V-->>U: 9. 화면 출력
+    Note right of MAP: 주변 약국 탐색
+    U->>V: [A] 사용자 장치 위치 전달 및 약국 요청
+    V->>MAP: [B] 반경 내 약국 탐색
+    MAP-->>V: 약국 위치 리스트 반환
+    V-->>U: [C] 지도 마커 및 약국 목록 렌더링
 ```
 
 ### 🧩 주요 모듈 상세 설명
@@ -227,7 +224,7 @@ sequenceDiagram
 | 🌐 웹서비스 메인 화면 | 🗺️ 반경 내 약국 검색 |
 |:---:|:---:|
 | <img src="docs/images/demo_chat.png" alt="웹 메인 화면" width="400"/> | <img src="docs/images/demo_map.png" alt="구글맵 내 주변 약국" width="400"/> |
-| **자연어 증상 입력 시 추천 약품 안내** | **내 위치 기반 반경 내 약국 및 병원 시각화** |
+| **자연어 증상 입력 시 추천 약품 안내** | **내 위치 기반 반경 내 약국 시각화** |
 
 > 📌 **안내:** 위 스크린샷은 예시 이미지 경로(`docs/images/demo_chat.png` 등)로 되어 있습니다. 실제 프로젝트 진행 캡처본으로 파일 경로를 업데이트해주세요.
 
@@ -241,9 +238,9 @@ sequenceDiagram
 - **문제**: LLM 모델이 증상 기반 약품 추천 시 가상의 약품이나, 유저의 기저질환에 치명적인 약품을 추천하는 현상 발생.
 - **해결**: Router 노드에서 `symptom_recommendation`을 감지할 경우, "DUR/OpenFDA 조회 노드"를 **강제 (Mandatory) 통과**하도록 State Machine 엣지를 설계했습니다. 수집된 제약 API 반환값(Context) 외의 약물은 프롬프트 단에서 철저히 차단하는 `Chain of Safety` 아키텍처를 구현해 신뢰도를 높였습니다.
 
-### 2. 공공 OpenAPI 지연 및 토큰 초과 문제
+### 2. 답변 생성 지연 문제
 - **문제**: 추천 성분이 여러 개일 때 심평원 병용 금기 API를 다중 호출하며 전체 응답 파이프라인 지연이 발생.
-- **해결**: `drug_service.py` 내 API 호출 시 **로컬 캐싱(혹은 병렬 비동기 호출)** 기법을 도입하여, 한 번 분석된 성분/DUR 쿼리는 즉각 반환되도록 응답 속도를 기존 대비 획기적으로 낮추었습니다.
+- **해결**: `drug_service.py` 내 API 호출 구조를 **병렬 비동기 호출(Async gather)** 기반으로 전면 리팩토링했습니다. 동시에 처리 가능한 다중 성분 쿼리들은 대기 시간 없이 한 번에 요청 및 분석되어, 전체 응답 파이프라인 지연 시간을 기존 대비 획기적으로 낮추었습니다.
 
 ---
 
