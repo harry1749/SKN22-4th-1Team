@@ -15,19 +15,38 @@
 
 ## 2) 컴포넌트 구성도
 
+사용자가 증상(예: "머리가 아프고 열이 나요")을 질의했을 때, 시스템이 정보를 수집하고 답변을 출력할 때까지의 과정입니다.
+
 ```mermaid
-flowchart LR
-    U[User Browser] --> T[Templates]
-    T --> V[chat/views.py]
-    V --> G[LangGraph builder_v2.py]
-    G --> OAI[OpenAI]
-    G --> SB[Supabase]
-    V --> DS[DrugService]
-    DS --> FDA[openFDA]
-    DS --> DUR[KR DUR]
-    V --> MS[MapService]
-    MS --> GP[Google Places]
-    MS --> OSM[OSM Overpass]
+sequenceDiagram
+    participant MAP as Google Maps API
+    participant U as User (Client)
+    participant V as Django View
+    participant R as LangGraph Router
+    participant API as Supabase & FDA/DUR API
+    participant LLM as GPT-4o-mini
+
+    U->>V: 1. 자연어 증상 검색
+    V->>R: 2. Graph Agent에 질의 및 사용자 세션 정보 전달
+    
+    R->>LLM: 3. 사용자 의도 및 상태 분류
+    LLM-->>R: 분석 결과 반환
+    
+    Note left of API: Data Retrieval (병렬 처리)
+    R->>API: 4. 유저 프로필 조회 및 성분탐색
+    API-->>R: 추천 성분 및 DUR 반환
+    
+    R->>LLM: 5. 수집 제약 데이터 기반 답변 요청
+    LLM-->>R: 환자 맞춤형 최종 답변
+    
+    R-->>V: 6. 생성 결과 반환 (답변 + 성분)
+    V-->>U: 7. 결과 화면(HTML) 출력
+    
+    Note right of MAP: 주변 약국 탐색
+    U->>V: [A] 사용자 장치 위치 전달 및 약국 요청
+    V->>MAP: [B] 반경 내 약국 탐색
+    MAP-->>V: 약국 위치 리스트 반환
+    V-->>U: [C] 지도 마커 및 약국 목록 렌더링
 ```
 
 ## 3) 핵심 URL
